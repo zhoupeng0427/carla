@@ -363,6 +363,10 @@ namespace detail {
       _client.ApplyControlToVehicle(vehicle.GetId(), control);
     }
 
+    void ApplyControlAckermannToVehicle(Vehicle &vehicle, const rpc::VehicleControlAckermann &control) {
+      _client.ApplyControlAckermannToVehicle(vehicle.GetId(), control);
+    }
+
     void ApplyControlToWalker(Walker &walker, const rpc::WalkerControl &control) {
       _client.ApplyControlToWalker(walker.GetId(), control);
     }

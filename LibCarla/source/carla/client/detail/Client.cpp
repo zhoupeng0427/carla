@@ -285,6 +285,10 @@ namespace detail {
     _pimpl->AsyncCall("apply_control_to_vehicle", vehicle, control);
   }
 
+  void Client::ApplyControlAckermannToVehicle(rpc::ActorId vehicle, const rpc::VehicleControlAckermann &control) {
+    _pimpl->AsyncCall("apply_control_ackermann_to_vehicle", vehicle, control);
+  }
+
   void Client::ApplyControlToWalker(rpc::ActorId walker, const rpc::WalkerControl &control) {
     _pimpl->AsyncCall("apply_control_to_walker", walker, control);
   }

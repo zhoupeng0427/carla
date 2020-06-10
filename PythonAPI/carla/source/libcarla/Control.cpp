@@ -6,6 +6,7 @@
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
 #include <carla/rpc/VehicleControl.h>
+#include <carla/rpc/VehicleControlAckermann.h>
 #include <carla/rpc/VehiclePhysicsControl.h>
 #include <carla/rpc/WheelPhysicsControl.h>
 #include <carla/rpc/WalkerControl.h>
@@ -28,6 +29,15 @@ namespace rpc {
         << ", reverse=" << boolalpha(control.reverse)
         << ", manual_gear_shift=" << boolalpha(control.manual_gear_shift)
         << ", gear=" << std::to_string(control.gear) << ')';
+    return out;
+  }
+
+  std::ostream &operator<<(std::ostream &out, const VehicleControlAckermann &control) {
+    out << "VehicleControlAckermann(steer=" << std::to_string(control.steer)
+        << ", steer_speed=" << std::to_string(control.steer_speed)
+        << ", speed=" << std::to_string(control.speed)
+        << ", acceleration=" << std::to_string(control.acceleration)
+        << ", jerk=" << std::to_string(control.jerk) << ')';
     return out;
   }
 
@@ -284,6 +294,23 @@ void export_control() {
     .def_readwrite("gear", &cr::VehicleControl::gear)
     .def("__eq__", &cr::VehicleControl::operator==)
     .def("__ne__", &cr::VehicleControl::operator!=)
+    .def(self_ns::str(self_ns::self))
+  ;
+
+  class_<cr::VehicleControlAckermann>("VehicleControlAckermann")
+    .def(init<float, float, float, float, float>(
+      (arg("stter") = 0.0f,
+      arg("steer_speed") = 0.0f,
+      arg("speed") = 0.0f,
+      arg("acceleration") = 0.0f,
+      arg("jerk") = 0.0f)))
+    .def_readwrite("steer", &cr::VehicleControlAckermann::steer)
+    .def_readwrite("steer_speed", &cr::VehicleControlAckermann::steer_speed)
+    .def_readwrite("speed", &cr::VehicleControlAckermann::speed)
+    .def_readwrite("acceleration", &cr::VehicleControlAckermann::acceleration)
+    .def_readwrite("jerk", &cr::VehicleControlAckermann::jerk)
+    .def("__eq__", &cr::VehicleControlAckermann::operator==)
+    .def("__ne__", &cr::VehicleControlAckermann::operator!=)
     .def(self_ns::str(self_ns::self))
   ;
 

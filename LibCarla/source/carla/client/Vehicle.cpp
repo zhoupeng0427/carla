@@ -51,6 +51,10 @@ namespace client {
     }
   }
 
+  void Vehicle::ApplyControlAckermann(const ControlAckermann &control) {
+    GetEpisode().Lock()->ApplyControlAckermannToVehicle(*this, control);
+  }
+
   void Vehicle::ApplyPhysicsControl(const PhysicsControl &physics_control) {
     GetEpisode().Lock()->ApplyPhysicsControlToVehicle(*this, physics_control);
   }

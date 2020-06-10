@@ -20,6 +20,7 @@
 #include "carla/rpc/LightState.h"
 #include "carla/rpc/MapInfo.h"
 #include "carla/rpc/TrafficLightState.h"
+#include "carla/rpc/VehicleControlAckermann.h"
 #include "carla/rpc/VehiclePhysicsControl.h"
 #include "carla/rpc/VehicleLightState.h"
 #include "carla/rpc/WeatherParameters.h"
@@ -174,6 +175,10 @@ namespace detail {
     void ApplyControlToVehicle(
         rpc::ActorId vehicle,
         const rpc::VehicleControl &control);
+
+    void ApplyControlAckermannToVehicle(
+        rpc::ActorId vehicle,
+        const rpc::VehicleControlAckermann &control);
 
     void ApplyControlToWalker(
         rpc::ActorId walker,

@@ -12,6 +12,7 @@
 #include "Carla/Util/NavigationMesh.h"
 #include "Carla/Vehicle/CarlaWheeledVehicle.h"
 #include "Carla/Walker/WalkerController.h"
+#include "Carla/Vehicle/AckermannController.h"
 
 #include <compiler/disable-ue4-macros.h>
 #include <carla/Functional.h>
@@ -33,6 +34,7 @@
 #include <carla/rpc/Vector2D.h>
 #include <carla/rpc/Vector3D.h>
 #include <carla/rpc/VehicleControl.h>
+#include <carla/rpc/VehicleControlAckermann.h>
 #include <carla/rpc/VehiclePhysicsControl.h>
 #include <carla/rpc/VehicleLightState.h>
 #include <carla/rpc/WalkerBoneControl.h>
@@ -723,6 +725,30 @@ void FCarlaServer::FPimpl::BindActions()
       RESPOND_ERROR("unable to apply control: actor is not a vehicle");
     }
     Vehicle->ApplyVehicleControl(Control, EVehicleInputPriority::Client);
+    return R<void>::Success();
+  };
+
+  BIND_SYNC(apply_control_ackermann_to_vehicle) << [this](
+      cr::ActorId ActorId,
+      cr::VehicleControlAckermann Control) -> R<void>
+  {
+    REQUIRE_CARLA_EPISODE();
+    auto ActorView = Episode->FindActor(ActorId);
+    if (!ActorView.IsValid())
+    {
+      RESPOND_ERROR("unable to apply control: actor not found");
+    }
+    auto Vehicle = Cast<ACarlaWheeledVehicle>(ActorView.GetActor());
+    if (Vehicle == nullptr)
+    {
+      RESPOND_ERROR("unable to apply control: actor is not a vehicle");
+    }
+    auto Controller = Cast<AAckermannController>(Vehicle->GetController());
+    if (Controller == nullptr)
+    {
+      RESPOND_ERROR("unable to apply control: vehicle has an incompatible controller");
+    }
+    Controller->ApplyVehicleControl(Control);
     return R<void>::Success();
   };
 

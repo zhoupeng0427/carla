@@ -112,6 +112,7 @@ void export_actor() {
       no_init)
       .add_property("bounding_box", CALL_RETURNING_COPY(cc::Vehicle, GetBoundingBox))
       .def("apply_control", &cc::Vehicle::ApplyControl, (arg("control")))
+      .def("apply_control_ackermann", &cc::Vehicle::ApplyControlAckermann, (arg("control")))
       .def("get_control", &cc::Vehicle::GetControl)
       .def("set_light_state", &cc::Vehicle::SetLightState, (arg("light_state")))
       .def("get_light_state", CONST_CALL_WITHOUT_GIL(cc::Vehicle, GetLightState))

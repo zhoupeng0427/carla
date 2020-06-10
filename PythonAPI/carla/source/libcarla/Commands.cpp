@@ -101,6 +101,13 @@ void export_commands() {
     .def_readwrite("control", &cr::Command::ApplyVehicleControl::control)
   ;
 
+  class_<cr::Command::ApplyVehicleControlAckermann>("ApplyVehicleControlAckermann")
+    .def("__init__", &command_impl::CustomInit<ActorPtr, cr::VehicleControlAckermann>, (arg("actor"), arg("control")))
+    .def(init<cr::ActorId, cr::VehicleControlAckermann>((arg("actor_id"), arg("control"))))
+    .def_readwrite("actor_id", &cr::Command::ApplyVehicleControlAckermann::actor)
+    .def_readwrite("control", &cr::Command::ApplyVehicleControlAckermann::control)
+  ;
+
   class_<cr::Command::ApplyWalkerControl>("ApplyWalkerControl")
     .def("__init__", &command_impl::CustomInit<ActorPtr, cr::WalkerControl>, (arg("actor"), arg("control")))
     .def(init<cr::ActorId, cr::WalkerControl>((arg("actor_id"), arg("control"))))
@@ -169,6 +176,7 @@ void export_commands() {
   implicitly_convertible<cr::Command::SpawnActor, cr::Command>();
   implicitly_convertible<cr::Command::DestroyActor, cr::Command>();
   implicitly_convertible<cr::Command::ApplyVehicleControl, cr::Command>();
+  //implicitly_convertible<cr::Command::ApplyVehicleControlAckermann, cr::Command>();
   implicitly_convertible<cr::Command::ApplyWalkerControl, cr::Command>();
   implicitly_convertible<cr::Command::ApplyTransform, cr::Command>();
   implicitly_convertible<cr::Command::ApplyWalkerState, cr::Command>();

@@ -10,6 +10,7 @@
 #include "carla/rpc/TrafficLightState.h"
 #include "carla/rpc/VehicleLightState.h"
 #include "carla/rpc/VehicleControl.h"
+#include "carla/rpc/VehicleControlAckermann.h"
 #include "carla/rpc/VehiclePhysicsControl.h"
 #include "carla/trafficmanager/TrafficManager.h"
 
@@ -27,6 +28,7 @@ namespace client {
   public:
 
     using Control = rpc::VehicleControl;
+    using ControlAckermann = rpc::VehicleControlAckermann;
     using PhysicsControl = rpc::VehiclePhysicsControl;
     using LightState = rpc::VehicleLightState::LightState;
     using TM = traffic_manager::TrafficManager;
@@ -40,6 +42,9 @@ namespace client {
 
     /// Apply @a control to this vehicle.
     void ApplyControl(const Control &control);
+
+    /// Apply @a control to this vehicle.
+    void ApplyControlAckermann(const ControlAckermann &control);
 
     /// Apply physics control to this vehicle.
     void ApplyPhysicsControl(const PhysicsControl &physics_control);

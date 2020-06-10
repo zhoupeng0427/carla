@@ -12,6 +12,7 @@
 #include "carla/rpc/ActorDescription.h"
 #include "carla/rpc/ActorId.h"
 #include "carla/rpc/VehicleControl.h"
+#include "carla/rpc/VehicleControlAckermann.h"
 #include "carla/rpc/WalkerControl.h"
 
 #include <boost/variant.hpp>
@@ -69,6 +70,16 @@ namespace rpc {
           control(value) {}
       ActorId actor;
       VehicleControl control;
+      MSGPACK_DEFINE_ARRAY(actor, control);
+    };
+
+    struct ApplyVehicleControlAckermann : CommandBase<ApplyVehicleControlAckermann> {
+      ApplyVehicleControlAckermann() = default;
+      ApplyVehicleControlAckermann(ActorId id, const VehicleControlAckermann &value)
+        : actor(id),
+          control(value) {}
+      ActorId actor;
+      VehicleControlAckermann control;
       MSGPACK_DEFINE_ARRAY(actor, control);
     };
 
