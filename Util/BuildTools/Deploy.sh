@@ -55,9 +55,9 @@ REPOSITORY_TAG=$(get_git_repository_version)
 LATEST_PACKAGE=CARLA_${REPOSITORY_TAG}.tar.gz
 LATEST_PACKAGE_PATH=${CARLA_DIST_FOLDER}/${LATEST_PACKAGE}
 
-S3_PREFIX=s3://carla-releases/Linux/TDA
+S3_PREFIX=s3://carla-internal/TDA/Linux
 
-LATEST_DEPLOY_URI=${S3_PREFIX}/Dev/TDA_Latest.tar.gz
+LATEST_DEPLOY_URI=${S3_PREFIX}TDA_Latest.tar.gz
 
 if [[ ${REPOSITORY_TAG} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   log "Detected tag ${REPOSITORY_TAG}."

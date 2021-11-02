@@ -46,9 +46,9 @@ set CARLA_DIST_FOLDER=%~dp0%\Build\UE4Carla
 set LATEST_PACKAGE=CARLA_%REPOSITORY_TAG%.zip
 set LATEST_PACKAGE_PATH=%CARLA_DIST_FOLDER%\%LATEST_PACKAGE%
 
-set S3_PREFIX=s3://carla-releases/Windows/TDA
+set S3_PREFIX=s3://carla-internal/TDA/Windows
 
-set LATEST_DEPLOY_URI=!S3_PREFIX!/Dev/TDA_Latest.zip
+set LATEST_DEPLOY_URI=!S3_PREFIX!/TDA_Latest.zip
 
 rem Check for TAG version
 echo %REPOSITORY_TAG% | findstr /R /C:"^[0-9]*\.[0-9]*\.[0-9]*.$" 1>nul
