@@ -1,3 +1,9 @@
+carla-simulator (0.9.13) release; urgency=medium
+
+  * CARLA 0.9.13 release
+
+ -- Carla Simulator Team <carla.simulator@gmail.com>  Wed, 17 Nov 2021 10:00:00 +0000
+
 carla-simulator (0.9.12) release; urgency=medium
 
   * CARLA 0.9.12 release
