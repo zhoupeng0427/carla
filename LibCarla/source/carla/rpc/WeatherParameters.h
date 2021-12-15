@@ -36,6 +36,13 @@ namespace rpc {
     static WeatherParameters MidRainSunset;
     static WeatherParameters HardRainSunset;
     static WeatherParameters SoftRainSunset;
+    static WeatherParameters ClearNight;
+    static WeatherParameters CloudyNight;
+    static WeatherParameters WetNight;
+    static WeatherParameters WetCloudyNight;
+    static WeatherParameters SoftRainNight;
+    static WeatherParameters MidRainyNight;
+    static WeatherParameters HardRainNight;
 
     /// @}
 
@@ -50,7 +57,11 @@ namespace rpc {
         float in_sun_altitude_angle,
         float in_fog_density,
         float in_fog_distance,
-        float in_wetness)
+        float in_fog_falloff,
+        float in_wetness,
+        float in_scattering_intensity,
+        float in_mie_scattering_scale,
+        float in_rayleigh_scattering_scale)
       : cloudiness(in_cloudiness),
         precipitation(in_precipitation),
         precipitation_deposits(in_precipitation_deposits),
@@ -59,7 +70,11 @@ namespace rpc {
         sun_altitude_angle(in_sun_altitude_angle),
         fog_density(in_fog_density),
         fog_distance(in_fog_distance),
-        wetness(in_wetness) {}
+        fog_falloff(in_fog_falloff),
+        wetness(in_wetness),
+        scattering_intensity(in_scattering_intensity),
+        mie_scattering_scale(in_mie_scattering_scale),
+        rayleigh_scattering_scale(in_rayleigh_scattering_scale) {}
 
     float cloudiness = 0.0f;
     float precipitation = 0.0f;
@@ -69,7 +84,11 @@ namespace rpc {
     float sun_altitude_angle = 0.0f;
     float fog_density = 0.0f;
     float fog_distance = 0.0f;
+    float fog_falloff = 0.0f;
     float wetness = 0.0f;
+    float scattering_intensity = 0.0f;
+    float mie_scattering_scale = 0.0f;
+    float rayleigh_scattering_scale = 0.0331f;
 
 #ifdef LIBCARLA_INCLUDED_FROM_UE4
 
@@ -82,7 +101,11 @@ namespace rpc {
         sun_altitude_angle(Weather.SunAltitudeAngle),
         fog_density(Weather.FogDensity),
         fog_distance(Weather.FogDistance),
-        wetness(Weather.Wetness) {}
+        fog_falloff(Weather.FogFalloff),
+        wetness(Weather.Wetness),
+        scattering_intensity(Weather.ScatteringIntensity),
+        mie_scattering_scale(Weather.MieScatteringScale),
+        rayleigh_scattering_scale(Weather.RayleighScatteringScale) {}
 
     operator FWeatherParameters() const {
       FWeatherParameters Weather;
@@ -94,7 +117,12 @@ namespace rpc {
       Weather.SunAltitudeAngle = sun_altitude_angle;
       Weather.FogDensity = fog_density;
       Weather.FogDistance = fog_distance;
+      Weather.FogFalloff = fog_falloff;
       Weather.Wetness = wetness;
+      Weather.ScatteringIntensity = scattering_intensity;
+      Weather.MieScatteringScale = mie_scattering_scale;
+      Weather.RayleighScatteringScale = rayleigh_scattering_scale;
+
       return Weather;
     }
 
@@ -110,7 +138,11 @@ namespace rpc {
           sun_altitude_angle != rhs.sun_altitude_angle ||
           fog_density != rhs.fog_density ||
           fog_distance != rhs.fog_distance ||
-          wetness != rhs.wetness;
+          fog_falloff != rhs.fog_falloff ||
+          wetness != rhs.wetness ||
+          scattering_intensity != rhs.scattering_intensity ||
+          mie_scattering_scale != rhs.mie_scattering_scale ||
+          rayleigh_scattering_scale != rhs.rayleigh_scattering_scale;
     }
 
     bool operator==(const WeatherParameters &rhs) const {
@@ -126,7 +158,11 @@ namespace rpc {
         sun_altitude_angle,
         fog_density,
         fog_distance,
-        wetness);
+        fog_falloff,
+        wetness,
+        scattering_intensity,
+        mie_scattering_scale,
+        rayleigh_scattering_scale);
   };
 
 } // namespace rpc

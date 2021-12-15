@@ -11,7 +11,7 @@
 #include "Carla/Actor/ActorDefinition.h"
 
 #include <compiler/disable-ue4-macros.h>
-#include <carla/sensor/s11n/RadarData.h>
+#include <carla/sensor/data/RadarData.h>
 #include <compiler/enable-ue4-macros.h>
 
 #include "Radar.generated.h"
@@ -22,7 +22,7 @@ class CARLA_API ARadar : public ASensor
 {
   GENERATED_BODY()
 
-  using FRadarData = carla::sensor::s11n::RadarData;
+  using FRadarData = carla::sensor::data::RadarData;
 
 public:
 
@@ -48,7 +48,8 @@ protected:
 
   void BeginPlay() override;
 
-  virtual void Tick(float DeltaTime) override;
+  // virtual void PrePhysTick(float DeltaTime) override;
+  virtual void PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaTime) override;
 
   UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Detection")
   float Range;
@@ -79,6 +80,14 @@ private:
   /// Used to compute the velocity of the radar
   FVector PrevLocation;
 
-  UWorld* World;
+  struct RayData {
+    float Radius;
+    float Angle;
+    bool Hitted;
+    float RelativeVelocity;
+    FVector2D AzimuthAndElevation;
+    float Distance;
+  };
 
+  std::vector<RayData> Rays;
 };

@@ -8,6 +8,9 @@
 
 #include "carla/client/TrafficSign.h"
 #include "carla/rpc/TrafficLightState.h"
+#include "carla/client/Waypoint.h"
+#include "carla/client/Map.h"
+#include "carla/geom/BoundingBox.h"
 
 namespace carla {
 namespace client {
@@ -61,6 +64,17 @@ namespace client {
     ///
     /// @note This function calls the simulator
     std::vector<SharedPtr<TrafficLight>> GetGroupTrafficLights();
+
+    // resets the timers and states of all groups
+    void ResetGroup();
+
+    std::vector<SharedPtr<Waypoint>> GetAffectedLaneWaypoints() const;
+
+    std::vector<geom::BoundingBox> GetLightBoxes() const;
+
+    road::SignId GetOpenDRIVEID() const;
+
+    std::vector<SharedPtr<Waypoint>> GetStopWaypoints() const;
 
   };
 

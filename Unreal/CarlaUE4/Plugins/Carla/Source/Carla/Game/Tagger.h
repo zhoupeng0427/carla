@@ -8,24 +8,14 @@
 
 #include "GameFramework/Actor.h"
 #include "Components/PrimitiveComponent.h"
+
+#include <compiler/disable-ue4-macros.h>
+#include <carla/rpc/ObjectLabel.h>
+#include <compiler/enable-ue4-macros.h>
+
 #include "Tagger.generated.h"
 
-enum class ECityObjectLabel : uint8
-{
-  None         =   0u,
-  Buildings    =   1u,
-  Fences       =   2u,
-  Other        =   3u,
-  Pedestrians  =   4u,
-  Poles        =   5u,
-  RoadLines    =   6u,
-  Roads        =   7u,
-  Sidewalks    =   8u,
-  TrafficSigns =  12u,
-  Vegetation   =   9u,
-  Vehicles     =  10u,
-  Walls        =  11u,
-};
+namespace crp = carla::rpc;
 
 /// Sets actors' custom depth stencil value for semantic segmentation according
 /// to their meshes.
@@ -47,6 +37,7 @@ public:
   /// objects having this value active.
   static void TagActor(const AActor &Actor, bool bTagForSemanticSegmentation);
 
+
   /// Set the tag of every actor in level.
   ///
   /// If bTagForSemanticSegmentation true, activate the custom depth pass. This
@@ -55,23 +46,47 @@ public:
   /// objects having this value active.
   static void TagActorsInLevel(UWorld &World, bool bTagForSemanticSegmentation);
 
+  static void TagActorsInLevel(ULevel &Level, bool bTagForSemanticSegmentation);
+
   /// Retrieve the tag of an already tagged component.
-  static ECityObjectLabel GetTagOfTaggedComponent(const UPrimitiveComponent &Component)
+  static crp::CityObjectLabel GetTagOfTaggedComponent(const UPrimitiveComponent &Component)
   {
-    return static_cast<ECityObjectLabel>(Component.CustomDepthStencilValue);
+    return static_cast<crp::CityObjectLabel>(Component.CustomDepthStencilValue);
   }
 
-  /// Retrieve the tags of an already tagged actor. ECityObjectLabel::None is
+  /// Retrieve the tags of an already tagged actor. CityObjectLabel::None is
   /// not added to the array.
-  static void GetTagsOfTaggedActor(const AActor &Actor, TSet<ECityObjectLabel> &Tags);
+  static void GetTagsOfTaggedActor(const AActor &Actor, TSet<crp::CityObjectLabel> &Tags);
 
   /// Return true if @a Component has been tagged with the given @a Tag.
-  static bool MatchComponent(const UPrimitiveComponent &Component, ECityObjectLabel Tag)
+  static bool MatchComponent(const UPrimitiveComponent &Component, crp::CityObjectLabel Tag)
   {
     return (Tag == GetTagOfTaggedComponent(Component));
   }
 
-  static FString GetTagAsString(ECityObjectLabel Tag);
+  /// Retrieve the tags of an already tagged actor. CityObjectLabel::None is
+  /// not added to the array.
+  static FString GetTagAsString(crp::CityObjectLabel Tag);
+
+  /// Method that computes the label corresponding to a folder path
+  static crp::CityObjectLabel GetLabelByFolderName(const FString &String);
+
+  /// Method that computes the label corresponding to an specific object
+  /// using the folder path in which it is stored
+  template <typename T>
+  static crp::CityObjectLabel GetLabelByPath(const T *Object) {
+    const FString Path = Object->GetPathName();
+    TArray<FString> StringArray;
+    Path.ParseIntoArray(StringArray, TEXT("/"), false);
+    return (StringArray.Num() > 4 ? GetLabelByFolderName(StringArray[4]) : crp::CityObjectLabel::None);
+  }
+
+  static void SetStencilValue(UPrimitiveComponent &Component,
+    const crp::CityObjectLabel &Label, const bool bSetRenderCustomDepth);
+
+  static FLinearColor GetActorLabelColor(const AActor &Actor, const crp::CityObjectLabel &Label);
+
+  static bool IsThing(const crp::CityObjectLabel &Label);
 
   ATagger();
 

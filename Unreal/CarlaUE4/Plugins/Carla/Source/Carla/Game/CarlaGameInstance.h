@@ -9,7 +9,13 @@
 #include "Engine/GameInstance.h"
 
 #include "Carla/Game/CarlaEngine.h"
+#include "Carla/Recorder/CarlaRecorder.h"
 #include "Carla/Server/CarlaServer.h"
+
+#include <compiler/disable-ue4-macros.h>
+#include <carla/rpc/MapLayer.h>
+#include <carla/rpc/OpendriveGenerationParameters.h>
+#include <compiler/enable-ue4-macros.h>
 
 #include "CarlaGameInstance.generated.h"
 
@@ -74,21 +80,27 @@ public:
   }
 
   void SetOpendriveGenerationParameters(
-      const carla::rpc::OpendriveGenerationParameters & Parameters) {
+      const carla::rpc::OpendriveGenerationParameters & Parameters)
+  {
     GenerationParameters = Parameters;
   }
 
   const carla::rpc::OpendriveGenerationParameters&
-      GetOpendriveGenerationParameters() const {
+      GetOpendriveGenerationParameters() const
+  {
     return GenerationParameters;
   }
 
-  void SetMapToLoad(const FString MapName);
+  UFUNCTION(Category = "Carla Game Instance", BlueprintCallable)
+  void SetMapLayer(int32 MapLayer)
+  {
+    CurrentMapLayer = MapLayer;
+  }
 
-  void CheckAndLoadMap(UWorld *world, UCarlaEpisode &Episode);
-
-  bool IsLevelPendingLoad() const {
-    return bShouldLoadLevel;
+  UFUNCTION(Category = "Carla Game Instance", BlueprintCallable)
+  int32 GetCurrentMapLayer() const
+  {
+    return CurrentMapLayer;
   }
 
 private:
@@ -98,11 +110,15 @@ private:
 
   FCarlaEngine CarlaEngine;
 
+  UPROPERTY()
+  ACarlaRecorder *Recorder = nullptr;
+
   carla::rpc::OpendriveGenerationParameters GenerationParameters;
 
-  UPROPERTY()
-  bool bShouldLoadLevel = false;
+  UPROPERTY(Category = "CARLA Game Instance", EditAnywhere)
+  int32 CurrentMapLayer = static_cast<int32>(carla::rpc::MapLayer::All);
 
   UPROPERTY()
-  FString MapToLoad;
+  FString _MapPath;
+
 };

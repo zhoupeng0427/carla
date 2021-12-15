@@ -6,12 +6,10 @@
 
 #pragma once
 
-#include <stdexcept>
 #include <memory.h>
 
 #include "carla/client/Waypoint.h"
 #include "carla/geom/Location.h"
-#include "carla/geom/Math.h"
 #include "carla/geom/Transform.h"
 #include "carla/geom/Vector3D.h"
 #include "carla/Memory.h"
@@ -24,6 +22,16 @@ namespace traffic_manager {
   namespace cg = carla::geom;
   using WaypointPtr = carla::SharedPtr<cc::Waypoint>;
   using GeoGridId = carla::road::JuncId;
+  enum class RoadOption : uint8_t {
+    Void = 0,
+    Left = 1,
+    Right = 2,
+    Straight = 3,
+    LaneFollow = 4,
+    ChangeLaneLeft = 5,
+    ChangeLaneRight = 6,
+    RoadEnd = 7
+  };
 
   /// This is a simple wrapper class on Carla's waypoint object.
   /// The class is used to represent discrete samples of the world map.
@@ -43,6 +51,8 @@ namespace traffic_manager {
     SimpleWaypointPtr next_left_waypoint;
     /// Pointer to right lane change waypoint.
     SimpleWaypointPtr next_right_waypoint;
+    /// RoadOption for the actual waypoint.
+    RoadOption road_option = RoadOption::Void;
     /// Integer placing the waypoint into a geodesic grid.
     GeoGridId geodesic_grid_id = 0;
     // Boolean to hold if the waypoint belongs to a junction
@@ -93,7 +103,7 @@ namespace traffic_manager {
     void SetGeodesicGridId(GeoGridId _geodesic_grid_id);
     GeoGridId GetGeodesicGridId();
 
-    /// Metod to retreive junction id of the waypoint.
+    /// Method to retreive junction id of the waypoint.
     GeoGridId GetJunctionId() const;
 
     /// Calculates the distance from the object's waypoint to the passed
@@ -120,6 +130,10 @@ namespace traffic_manager {
 
     /// Return transform object for the current waypoint.
     cg::Transform GetTransform() const;
+
+    // Accessor methods for road option.
+    void SetRoadOption(RoadOption _road_option);
+    RoadOption GetRoadOption();
   };
 
 } // namespace traffic_manager

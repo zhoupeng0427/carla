@@ -52,16 +52,16 @@ namespace streaming {
       return _server.MakeStream();
     }
 
-    MultiStream MakeMultiStream() {
-      return _server.MakeMultiStream();
-    }
-
     void Run() {
       _pool.Run();
     }
 
     void AsyncRun(size_t worker_threads) {
       _pool.AsyncRun(worker_threads);
+    }
+
+    void SetSynchronousMode(bool is_synchro) {
+      _server.SetSynchronousMode(is_synchro);
     }
 
   private:

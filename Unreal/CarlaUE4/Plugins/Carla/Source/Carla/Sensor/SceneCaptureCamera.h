@@ -26,5 +26,6 @@ public:
 
 protected:
 
-  void Tick(float DeltaTime) override;
+  void PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaSeconds) override;
+
 };

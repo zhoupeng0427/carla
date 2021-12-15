@@ -11,6 +11,8 @@
 #include "TrafficLightGroup.h"
 #include "TrafficLightInterface.h"
 #include "TrafficLightManager.h"
+#include "Carla/Game/CarlaStatics.h"
+#include "Carla/MapGen/LargeMapManager.h"
 
 UTrafficLightComponent::UTrafficLightComponent()
   : Super()
@@ -43,6 +45,9 @@ void UTrafficLightComponent::InitializeSign(const carla::road::Map &Map)
         // Get 90% of the half size of the width of the lane
         float BoxSize = static_cast<float>(
             0.9f*Map.GetLaneWidth(signal_waypoint)*0.5);
+        // Prevent a situation where the road width is 0,
+        // this could happen in a lane that is just appearing
+        BoxSize = std::max(0.01f, BoxSize);
         // Get min and max
         double LaneLength = Map.GetLane(signal_waypoint).GetLength();
         double LaneDistance = Map.GetLane(signal_waypoint).GetDistance();
@@ -57,7 +62,13 @@ void UTrafficLightComponent::InitializeSign(const carla::road::Map &Map)
               LaneDistance + epsilon, LaneDistance + LaneLength - epsilon);
         }
         float UnrealBoxSize = 100*BoxSize;
-        GenerateTrafficLightBox(Map.ComputeTransform(signal_waypoint), UnrealBoxSize);
+        FTransform BoxTransform = Map.ComputeTransform(signal_waypoint);
+        ALargeMapManager* LargeMapManager = UCarlaStatics::GetLargeMapManager(GetWorld());
+        if (LargeMapManager)
+        {
+          BoxTransform = LargeMapManager->GlobalToLocalTransform(BoxTransform);
+        }
+        GenerateTrafficLightBox(BoxTransform, UnrealBoxSize);
       }
     }
   }
@@ -68,6 +79,7 @@ void UTrafficLightComponent::GenerateTrafficLightBox(const FTransform BoxTransfo
 {
   UBoxComponent* BoxComponent = GenerateTriggerBox(BoxTransform, BoxSize);
   BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &UTrafficLightComponent::OnOverlapTriggerBox);
+  AddEffectTriggerVolume(BoxComponent);
 }
 
 void UTrafficLightComponent::SetLightState(ETrafficLightState NewState)
@@ -77,6 +89,11 @@ void UTrafficLightComponent::SetLightState(ETrafficLightState NewState)
   if (GetOwner()->Implements<UTrafficLightInterface>())
   {
     ITrafficLightInterface::Execute_LightChanged(GetOwner(), LightState);
+  }
+  ATrafficLightBase* OldTrafficLight = Cast<ATrafficLightBase>(GetOwner());
+  if (OldTrafficLight)
+  {
+    OldTrafficLight->LightChangedCompatibility(NewState);
   }
 
   for (auto Controller : Vehicles)
@@ -103,18 +120,28 @@ ETrafficLightState UTrafficLightComponent::GetLightState() const
 
 void UTrafficLightComponent::SetFrozenGroup(bool InFreeze)
 {
-  if (TrafficLightGroup)
+  if (GetGroup())
   {
-    TrafficLightGroup->SetFrozenGroup(InFreeze);
+    GetGroup()->SetFrozenGroup(InFreeze);
   }
 }
 
 ATrafficLightGroup* UTrafficLightComponent::GetGroup()
 {
-  return TrafficLightGroup;
+  return TrafficLightController->GetGroup();
+}
+
+const ATrafficLightGroup* UTrafficLightComponent::GetGroup() const
+{
+  return TrafficLightController->GetGroup();
 }
 
 UTrafficLightController* UTrafficLightComponent::GetController()
+{
+  return TrafficLightController;
+}
+
+const UTrafficLightController* UTrafficLightComponent::GetController() const
 {
   return TrafficLightController;
 }
@@ -142,4 +169,9 @@ void UTrafficLightComponent::OnOverlapTriggerBox(UPrimitiveComponent *Overlapped
       }
     }
   }
+}
+
+void UTrafficLightComponent::SetController(UTrafficLightController* Controller)
+{
+  TrafficLightController = Controller;
 }

@@ -64,8 +64,8 @@ namespace low_level {
       return _dispatcher.MakeStream();
     }
 
-    MultiStream MakeMultiStream() {
-      return _dispatcher.MakeMultiStream();
+    void SetSynchronousMode(bool is_synchro) {
+      _server.SetSynchronousMode(is_synchro);
     }
 
   private:

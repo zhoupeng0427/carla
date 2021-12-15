@@ -15,6 +15,8 @@
 
 #include <boost/python/stl_iterator.hpp>
 
+namespace ctm = carla::traffic_manager;
+
 static void SetTimeout(carla::client::Client &client, double seconds) {
   client.SetTimeout(TimeDurationFromSeconds(seconds));
 }
@@ -23,6 +25,14 @@ static auto GetAvailableMaps(const carla::client::Client &self) {
   carla::PythonUtil::ReleaseGIL unlock;
   boost::python::list result;
   for (const auto &str : self.GetAvailableMaps()) {
+    result.append(str);
+  }
+  return result;
+}
+
+static auto GetRequiredFiles(const carla::client::Client &self, const std::string &folder, const bool download) {
+  boost::python::list result;
+  for (const auto &str : self.GetRequiredFiles(folder, download)) {
     result.append(str);
   }
   return result;
@@ -178,20 +188,25 @@ void export_client() {
     .def("get_server_version", CONST_CALL_WITHOUT_GIL(cc::Client, GetServerVersion))
     .def("get_world", &cc::Client::GetWorld)
     .def("get_available_maps", &GetAvailableMaps)
-    .def("reload_world", CONST_CALL_WITHOUT_GIL(cc::Client, ReloadWorld))
-    .def("load_world", CONST_CALL_WITHOUT_GIL_1(cc::Client, LoadWorld, std::string), (arg("map_name")))
-    .def("generate_opendrive_world", CONST_CALL_WITHOUT_GIL_2(cc::Client, GenerateOpenDriveWorld, std::string,
-        rpc::OpendriveGenerationParameters), (arg("opendrive"), arg("parameters")=rpc::OpendriveGenerationParameters()))
-    .def("start_recorder", CALL_WITHOUT_GIL_1(cc::Client, StartRecorder, std::string), (arg("name")))
+    .def("set_files_base_folder", &cc::Client::SetFilesBaseFolder, (arg("path")))
+    .def("get_required_files", &GetRequiredFiles, (arg("folder")="", arg("download")=true))
+    .def("request_file", &cc::Client::RequestFile, (arg("name")))
+    .def("reload_world", CONST_CALL_WITHOUT_GIL_1(cc::Client, ReloadWorld, bool), (arg("reset_settings")=true))
+    .def("load_world", CONST_CALL_WITHOUT_GIL_3(cc::Client, LoadWorld, std::string, bool, rpc::MapLayer), (arg("map_name"), arg("reset_settings")=true, arg("map_layers")=rpc::MapLayer::All))
+    .def("generate_opendrive_world", CONST_CALL_WITHOUT_GIL_3(cc::Client, GenerateOpenDriveWorld, std::string,
+        rpc::OpendriveGenerationParameters, bool), (arg("opendrive"), arg("parameters")=rpc::OpendriveGenerationParameters(),
+        arg("reset_settings")=true))
+    .def("start_recorder", CALL_WITHOUT_GIL_2(cc::Client, StartRecorder, std::string, bool), (arg("name"), arg("additional_data")=false))
     .def("stop_recorder", &cc::Client::StopRecorder)
     .def("show_recorder_file_info", CALL_WITHOUT_GIL_2(cc::Client, ShowRecorderFileInfo, std::string, bool), (arg("name"), arg("show_all")))
     .def("show_recorder_collisions", CALL_WITHOUT_GIL_3(cc::Client, ShowRecorderCollisions, std::string, char, char), (arg("name"), arg("type1"), arg("type2")))
     .def("show_recorder_actors_blocked", CALL_WITHOUT_GIL_3(cc::Client, ShowRecorderActorsBlocked, std::string, double, double), (arg("name"), arg("min_time"), arg("min_distance")))
-    .def("replay_file", CALL_WITHOUT_GIL_4(cc::Client, ReplayFile, std::string, double, double, uint32_t), (arg("name"), arg("time_start"), arg("duration"), arg("follow_id")))
+    .def("replay_file", CALL_WITHOUT_GIL_5(cc::Client, ReplayFile, std::string, double, double, uint32_t, bool), (arg("name"), arg("time_start"), arg("duration"), arg("follow_id"), arg("replay_sensors")=false))
+    .def("stop_replayer", &cc::Client::StopReplayer, (arg("keep_actors")))
     .def("set_replayer_time_factor", &cc::Client::SetReplayerTimeFactor, (arg("time_factor")))
     .def("set_replayer_ignore_hero", &cc::Client::SetReplayerIgnoreHero, (arg("ignore_hero")))
     .def("apply_batch", &ApplyBatchCommands, (arg("commands"), arg("do_tick")=false))
     .def("apply_batch_sync", &ApplyBatchCommandsSync, (arg("commands"), arg("do_tick")=false))
-    .def("get_trafficmanager", CONST_CALL_WITHOUT_GIL_1(cc::Client, GetInstanceTM, uint16_t), (arg("port")=TM_DEFAULT_PORT))
+    .def("get_trafficmanager", CONST_CALL_WITHOUT_GIL_1(cc::Client, GetInstanceTM, uint16_t), (arg("port")=ctm::TM_DEFAULT_PORT))
   ;
 }

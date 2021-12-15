@@ -29,6 +29,29 @@ float UTrafficLightController::NextState()
   return GetCurrentState().Time;
 }
 
+bool UTrafficLightController::AdvanceTimeAndCycleFinished(float DeltaTime)
+{
+  ElapsedTime += DeltaTime;
+
+  if(ElapsedTime > GetCurrentState().Time)
+  {
+    ElapsedTime = 0;
+    if (IsCycleFinished())
+    {
+      return true;
+    }
+    NextState();
+  }
+  return false;
+}
+
+void UTrafficLightController::StartCycle()
+{
+  ElapsedTime = 0;
+  CurrentState = 0;
+  SetTrafficLightsState(GetCurrentState().State);
+}
+
 const TArray<UTrafficLightComponent *> &UTrafficLightController::GetTrafficLights()
 {
   return TrafficLights;
@@ -37,11 +60,28 @@ const TArray<UTrafficLightComponent *> &UTrafficLightController::GetTrafficLight
 void UTrafficLightController::EmptyTrafficLights()
 {
   TrafficLights.Empty();
+  TrafficLightCarlaActors.Empty();
 }
 
 void UTrafficLightController::AddTrafficLight(UTrafficLightComponent * TrafficLight)
 {
   TrafficLights.Add(TrafficLight);
+  TrafficLight->SetController(this);
+}
+
+void UTrafficLightController::RemoveTrafficLight(UTrafficLightComponent * TrafficLight)
+{
+  TrafficLights.Remove(TrafficLight);
+}
+
+void UTrafficLightController::AddCarlaActorTrafficLight(FCarlaActor* CarlaActor)
+{
+  TrafficLightCarlaActors.Add(CarlaActor);
+}
+
+void UTrafficLightController::RemoveCarlaActorTrafficLight(FCarlaActor* CarlaActor)
+{
+  TrafficLightCarlaActors.Remove(CarlaActor);
 }
 
 const FString &UTrafficLightController::GetControllerId() const
@@ -61,9 +101,14 @@ bool UTrafficLightController::IsCycleFinished() const
 
 void UTrafficLightController::SetTrafficLightsState(ETrafficLightState NewState)
 {
+  SetCurrentLightState(NewState);
   for(auto *Light : TrafficLights)
   {
     Light->SetLightState(NewState);
+  }
+  for(FCarlaActor* Light : TrafficLightCarlaActors)
+  {
+    Light->SetTrafficLightState(NewState);
   }
 }
 
@@ -81,6 +126,7 @@ void UTrafficLightController::ResetState()
 {
   CurrentState = (LightStates.Num() - 1);
   SetTrafficLightsState(GetCurrentState().State);
+  ElapsedTime = 0;
 }
 
 void UTrafficLightController::SetYellowTime(float NewTime)
@@ -134,4 +180,29 @@ float UTrafficLightController::GetStateTime(const ETrafficLightState State) cons
     }
   }
   return 0.0f;
+}
+
+float UTrafficLightController::GetElapsedTime() const
+{
+  return ElapsedTime;
+}
+
+void UTrafficLightController::SetElapsedTime(float InElapsedTime)
+{
+  ElapsedTime = InElapsedTime;
+}
+
+void UTrafficLightController::SetGroup(ATrafficLightGroup* Group)
+{
+  TrafficLightGroup = Group;
+}
+
+ATrafficLightGroup* UTrafficLightController::GetGroup()
+{
+  return TrafficLightGroup;
+}
+
+const ATrafficLightGroup* UTrafficLightController::GetGroup() const
+{
+  return TrafficLightGroup;
 }

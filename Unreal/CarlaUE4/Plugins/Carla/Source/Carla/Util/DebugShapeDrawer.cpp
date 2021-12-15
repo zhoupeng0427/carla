@@ -6,6 +6,9 @@
 
 #include "Carla.h"
 #include "Carla/Util/DebugShapeDrawer.h"
+#include "Carla/Game/CarlaHUD.h"
+#include "Carla/Game/CarlaStatics.h"
+#include "Carla/MapGen/LargeMapManager.h"
 
 #include "DrawDebugHelpers.h"
 #include "Components/LineBatchComponent.h"
@@ -15,21 +18,31 @@
 #include <carla/rpc/String.h>
 #include <compiler/enable-ue4-macros.h>
 
+
+
 struct FShapeVisitor
 {
   using Shape = carla::rpc::DebugShape;
 
   FShapeVisitor(UWorld &InWorld, FColor InColor, float InLifeTime, bool bInPersistentLines)
     : World(&InWorld),
-      Color(InColor),
+      Color(InColor.ReinterpretAsLinear() * BrightMultiplier),
       LifeTime(InLifeTime),
       bPersistentLines(bInPersistentLines)
-  {}
+  {
+    World->PersistentLineBatcher->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+  }
 
   void operator()(const Shape::Point &Point) const
   {
+    FVector Location = FVector(Point.location);
+    ALargeMapManager* LargeMap = UCarlaStatics::GetLargeMapManager(World);
+    if (LargeMap)
+    {
+      Location = LargeMap->GlobalToLocalLocation(Location);
+    }
     World->PersistentLineBatcher->DrawPoint(
-        Point.location,
+        Location,
         Color,
         1e2f * Point.size,
         DepthPriority,
@@ -38,9 +51,17 @@ struct FShapeVisitor
 
   void operator()(const Shape::Line &Line) const
   {
+    FVector Begin = FVector(Line.begin);
+    FVector End = FVector(Line.end);
+    ALargeMapManager* LargeMap = UCarlaStatics::GetLargeMapManager(World);
+    if (LargeMap)
+    {
+      Begin = LargeMap->GlobalToLocalLocation(Begin);
+      End = LargeMap->GlobalToLocalLocation(End);
+    }
     World->PersistentLineBatcher->DrawLine(
-        Line.begin,
-        Line.end,
+        Begin,
+        End,
         Color,
         DepthPriority,
         1e2f * Line.thickness,
@@ -49,48 +70,56 @@ struct FShapeVisitor
 
   void operator()(const Shape::Arrow &Arrow) const
   {
-    const auto Diff = Arrow.line.end - Arrow.line.begin;
+    FVector Begin = FVector(Arrow.line.begin);
+    FVector End = FVector(Arrow.line.end);
+    ALargeMapManager* LargeMap = UCarlaStatics::GetLargeMapManager(World);
+    if (LargeMap)
+    {
+      Begin = LargeMap->GlobalToLocalLocation(Begin);
+      End = LargeMap->GlobalToLocalLocation(End);
+    }
+    const auto Diff = End - Begin;
     const FRotator LookAt = FRotationMatrix::MakeFromX(Diff).Rotator();
-    const FTransform Transform = {LookAt, Arrow.line.begin};
+    const FTransform Transform = {LookAt, Begin};
 
     // Everything in centimeters
-    const auto Dist = 1e2f * Diff.Length();
+    const auto Dist = Diff.Size();
     const auto ArrowSize = 1e2f * Arrow.arrow_size;
     const auto ArrowTipDist = Dist - ArrowSize;
     const auto Thickness = 1e2f * Arrow.line.thickness;
 
     World->PersistentLineBatcher->DrawLines(TArray<FBatchedLine>({
         FBatchedLine(
-            Arrow.line.begin,
-            Arrow.line.end,
+            Begin,
+            End,
             Color,
             LifeTime,
             Thickness,
             DepthPriority),
         FBatchedLine(
             Transform.TransformPosition(FVector(ArrowTipDist, +ArrowSize, +ArrowSize)),
-            Arrow.line.end,
+            End,
             Color,
             LifeTime,
             Thickness,
             DepthPriority),
         FBatchedLine(
             Transform.TransformPosition(FVector(ArrowTipDist, +ArrowSize, -ArrowSize)),
-            Arrow.line.end,
+            End,
             Color,
             LifeTime,
             Thickness,
             DepthPriority),
         FBatchedLine(
             Transform.TransformPosition(FVector(ArrowTipDist, -ArrowSize, +ArrowSize)),
-            Arrow.line.end,
+            End,
             Color,
             LifeTime,
             Thickness,
             DepthPriority),
         FBatchedLine(
             Transform.TransformPosition(FVector(ArrowTipDist, -ArrowSize, -ArrowSize)),
-            Arrow.line.end,
+            End,
             Color,
             LifeTime,
             Thickness,
@@ -100,8 +129,14 @@ struct FShapeVisitor
   void operator()(const Shape::Box &Box) const
   {
     const FVector Extent = 1e2f * FVector{Box.box.extent.x, Box.box.extent.y, Box.box.extent.z};
-    const FTransform Transform = {FRotator(Box.rotation), Box.box.location};
+    FTransform Transform = {FRotator(Box.rotation), Box.box.location};
     const auto Thickness = 1e2f * Box.thickness;
+
+    ALargeMapManager* LargeMap = UCarlaStatics::GetLargeMapManager(World);
+    if (LargeMap)
+    {
+      Transform = LargeMap->GlobalToLocalTransform(Transform);
+    }
 
     FVector B[2], P, Q;
     B[0] = -Extent;
@@ -164,21 +199,38 @@ struct FShapeVisitor
       UE_LOG(LogCarla, Error, TEXT("Can't find player controller!"));
       return;
     }
+    FVector Location = FVector(Str.location);
+    ALargeMapManager* LargeMap = UCarlaStatics::GetLargeMapManager(World);
+    if (LargeMap)
+    {
+      Location = LargeMap->GlobalToLocalLocation(Location);
+    }
     ACarlaHUD *Hud = Cast<ACarlaHUD>(PlayerController->GetHUD());
-    Hud->AddHUDString(carla::rpc::ToFString(Str.text), Str.location, Color, LifeTime);
+    Hud->AddHUDString(carla::rpc::ToFString(Str.text), Location, Color.Quantize(), LifeTime);
   }
 
 private:
 
   UWorld *World;
 
-  FColor Color;
+  FLinearColor Color;
 
   float LifeTime;
 
   bool bPersistentLines;
 
   uint8 DepthPriority = SDPG_World;
+
+  // Debug lines are way more dark in the package, that's why this
+  // multiplier is needed.
+#if UE_BUILD_SHIPPING
+  static constexpr double BrightMultiplier = 1000.0;
+#else
+  // @TODO: Use UKismetSystemLibrary::IsStandalone to support colors
+  // in Editor's standalone mode.
+  static constexpr double BrightMultiplier = 1.0;
+#endif
+
 };
 
 void FDebugShapeDrawer::Draw(const carla::rpc::DebugShape &Shape)

@@ -45,6 +45,9 @@ public:
 
   void OnComponentDestroyed(bool bDestroyingHierarchy) override;
 
+  UFUNCTION(BlueprintCallable, Category = "Carla Light")
+  void RegisterLight();
+
   UFUNCTION(BlueprintImplementableEvent, BlueprintCallable, Category = "Carla Light")
   void UpdateLights();
 
@@ -52,25 +55,25 @@ public:
   void SetLightIntensity(float Intensity);
 
   UFUNCTION(BlueprintPure, Category = "Carla Light")
-  float GetLightIntensity();
+  float GetLightIntensity() const;
 
   UFUNCTION(BlueprintCallable, Category = "Carla Light")
   void SetLightColor(FLinearColor Color);
 
   UFUNCTION(BlueprintPure, Category = "Carla Light")
-  FLinearColor GetLightColor();
+  FLinearColor GetLightColor() const;
 
   UFUNCTION(BlueprintCallable, Category = "Carla Light")
   void SetLightOn(bool bOn);
 
   UFUNCTION(BlueprintPure, Category = "Carla Light")
-  bool GetLightOn();
+  bool GetLightOn() const;
 
   UFUNCTION(BlueprintCallable, Category = "Carla Light")
   void SetLightType(ELightType Type);
 
   UFUNCTION(BlueprintPure, Category = "Carla Light")
-  ELightType GetLightType();
+  ELightType GetLightType() const;
 
   carla::rpc::LightState GetLightState();
 
@@ -78,7 +81,11 @@ public:
 
   FVector GetLocation() const;
 
-  uint32 GetId() const;
+  UFUNCTION(BlueprintPure, Category = "Carla Light")
+  int GetId() const;
+
+  UFUNCTION(BlueprintCallable, Category = "Carla Light")
+  void SetId(int InId);
 
 protected:
 
@@ -94,4 +101,12 @@ protected:
   UPROPERTY(EditAnywhere, Category = "Carla Light")
   bool bLightOn;
 
+  UPROPERTY(EditAnywhere, Category = "Carla Light")
+  int Id = -1;
+
+  private:
+
+  void RecordLightChange() const;
+
+  bool bRegistered = false;
 };

@@ -4,10 +4,13 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
+#include <PxScene.h>
+
 #include "Carla.h"
 #include "Carla/Sensor/Radar.h"
 #include "Carla/Actor/ActorBlueprintFunctionLibrary.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Runtime/Core/Public/Async/ParallelFor.h"
 
 #include "carla/geom/Math.h"
 
@@ -60,22 +63,22 @@ void ARadar::BeginPlay()
 {
   Super::BeginPlay();
 
-  World = GetWorld();
-
   PrevLocation = GetActorLocation();
 }
 
-void ARadar::Tick(const float DeltaTime)
+void ARadar::PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaTime)
 {
-  Super::Tick(DeltaTime);
-
+  TRACE_CPUPROFILER_EVENT_SCOPE(ARadar::PostPhysTick);
   CalculateCurrentVelocity(DeltaTime);
 
   RadarData.Reset();
   SendLineTraces(DeltaTime);
 
-  auto DataStream = GetDataStream(*this);
-  DataStream.Send(*this, RadarData, DataStream.PopBufferFromPool());
+  {
+    TRACE_CPUPROFILER_EVENT_SCOPE_STR("Send Stream");
+    auto DataStream = GetDataStream(*this);
+    DataStream.Send(*this, RadarData, DataStream.PopBufferFromPool());
+  }
 }
 
 void ARadar::CalculateCurrentVelocity(const float DeltaTime)
@@ -87,9 +90,8 @@ void ARadar::CalculateCurrentVelocity(const float DeltaTime)
 
 void ARadar::SendLineTraces(float DeltaTime)
 {
-
+  TRACE_CPUPROFILER_EVENT_SCOPE(ARadar::SendLineTraces);
   constexpr float TO_METERS = 1e-2;
-  FHitResult OutHit(ForceInit);
   const FTransform& ActorTransform = GetActorTransform();
   const FRotator& TransformRotator = ActorTransform.Rotator();
   const FVector& RadarLocation = GetActorLocation();
@@ -98,54 +100,79 @@ void ARadar::SendLineTraces(float DeltaTime)
   const FVector TransformYAxis = ActorTransform.GetUnitAxis(EAxis::Y);
   const FVector TransformZAxis = ActorTransform.GetUnitAxis(EAxis::Z);
 
-  // Maximun radar radius in horizontal and vertical direction
+  // Maximum radar radius in horizontal and vertical direction
   const float MaxRx = FMath::Tan(FMath::DegreesToRadians(HorizontalFOV * 0.5f)) * Range;
   const float MaxRy = FMath::Tan(FMath::DegreesToRadians(VerticalFOV * 0.5f)) * Range;
   const int NumPoints = (int)(PointsPerSecond * DeltaTime);
 
-  for (int i = 0; i < NumPoints; i++)
+  // Generate the parameters of the rays in a deterministic way
+  Rays.clear();
+  Rays.resize(NumPoints);
+  for (int i = 0; i < Rays.size(); i++) {
+    Rays[i].Radius = RandomEngine->GetUniformFloat();
+    Rays[i].Angle = RandomEngine->GetUniformFloatInRange(0.0f, carla::geom::Math::Pi2<float>());
+    Rays[i].Hitted = false;
+  }
+
+  FCriticalSection Mutex;
+  GetWorld()->GetPhysicsScene()->GetPxScene()->lockRead();
   {
-    const float Radius = RandomEngine->GetUniformFloat();
-    const float Angle = RandomEngine->GetUniformFloatInRange(0.0f, carla::geom::Math::Pi2<float>());
+    TRACE_CPUPROFILER_EVENT_SCOPE(ParallelFor);
+    ParallelFor(NumPoints, [&](int32 idx) {
+      TRACE_CPUPROFILER_EVENT_SCOPE(ParallelForTask);
+      FHitResult OutHit(ForceInit);
+      const float Radius = Rays[idx].Radius;
+      const float Angle  = Rays[idx].Angle;
 
-    float Sin, Cos;
-    FMath::SinCos(&Sin, &Cos, Angle);
+      float Sin, Cos;
+      FMath::SinCos(&Sin, &Cos, Angle);
 
-    const FVector EndLocation = RadarLocation + TransformRotator.RotateVector({
-      Range,
-      MaxRx * Radius * Cos,
-      MaxRy * Radius * Sin
-    });
+      const FVector EndLocation = RadarLocation + TransformRotator.RotateVector({
+        Range,
+        MaxRx * Radius * Cos,
+        MaxRy * Radius * Sin
+      });
 
-    const bool Hitted = World->LineTraceSingleByChannel(
-      OutHit,
-      RadarLocation,
-      EndLocation,
-      ECC_MAX,
-      TraceParams,
-      FCollisionResponseParams::DefaultResponseParam
-    );
-
-    const TWeakObjectPtr<AActor> HittedActor = OutHit.Actor;
-    if (Hitted && HittedActor.Get()) {
-
-      const float RelativeVelocity = CalculateRelativeVelocity(OutHit, RadarLocation);
-
-      const FVector2D AzimuthAndElevation = FMath::GetAzimuthAndElevation (
-        (EndLocation - RadarLocation).GetSafeNormal() * Range,
-        TransformXAxis,
-        TransformYAxis,
-        TransformZAxis
+      const bool Hitted = GetWorld()->ParallelLineTraceSingleByChannel(
+        OutHit,
+        RadarLocation,
+        EndLocation,
+        ECC_GameTraceChannel2,
+        TraceParams,
+        FCollisionResponseParams::DefaultResponseParam
       );
 
+      const TWeakObjectPtr<AActor> HittedActor = OutHit.Actor;
+      if (Hitted && HittedActor.Get()) {
+        Rays[idx].Hitted = true;
+
+        Rays[idx].RelativeVelocity = CalculateRelativeVelocity(OutHit, RadarLocation);
+
+        Rays[idx].AzimuthAndElevation = FMath::GetAzimuthAndElevation (
+          (EndLocation - RadarLocation).GetSafeNormal() * Range,
+          TransformXAxis,
+          TransformYAxis,
+          TransformZAxis
+        );
+
+        Rays[idx].Distance = OutHit.Distance * TO_METERS;
+      }
+    });
+  }
+  GetWorld()->GetPhysicsScene()->GetPxScene()->unlockRead();
+
+  // Write the detections in the output structure
+  for (auto& ray : Rays) {
+    if (ray.Hitted) {
       RadarData.WriteDetection({
-        RelativeVelocity,
-        AzimuthAndElevation.X,
-        AzimuthAndElevation.Y,
-        OutHit.Distance * TO_METERS
+        ray.RelativeVelocity,
+        ray.AzimuthAndElevation.X,
+        ray.AzimuthAndElevation.Y,
+        ray.Distance
       });
     }
   }
+
 }
 
 float ARadar::CalculateRelativeVelocity(const FHitResult& OutHit, const FVector& RadarLocation)

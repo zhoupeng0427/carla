@@ -41,6 +41,14 @@ public:
 
   UFUNCTION(BlueprintPure, Category="CARLA")
   static TArray<FString> GetAllMapNames();
+
+  UFUNCTION(BlueprintPure, Category="CARLA", meta=(WorldContext="WorldContextObject"))
+  static ACarlaRecorder* GetRecorder(const UObject *WorldContextObject);
+
+  static CarlaReplayer* GetReplayer(const UObject *WorldContextObject);
+
+  UFUNCTION(BlueprintPure, Category="CARLA", meta=(WorldContext="WorldContextObject"))
+  static ALargeMapManager* GetLargeMapManager(const UObject *WorldContextObject);
 };
 
 // =============================================================================
@@ -67,4 +75,34 @@ inline UCarlaSettings *UCarlaStatics::GetCarlaSettings(const UObject *WorldConte
 {
   auto GameInstance = GetGameInstance(WorldContext);
   return GameInstance != nullptr ? GameInstance->GetCARLASettings() : nullptr;
+}
+
+inline ACarlaRecorder* UCarlaStatics::GetRecorder(const UObject *WorldContextObject)
+{
+  auto* Episode = UCarlaStatics::GetCurrentEpisode(WorldContextObject);
+  if (Episode)
+  {
+    return Episode->GetRecorder();
+  }
+  return nullptr;
+}
+
+inline CarlaReplayer* UCarlaStatics::GetReplayer(const UObject *WorldContextObject)
+{
+  auto* Episode = UCarlaStatics::GetCurrentEpisode(WorldContextObject);
+  if (Episode)
+  {
+    return Episode->GetReplayer();
+  }
+  return nullptr;
+}
+
+inline ALargeMapManager* UCarlaStatics::GetLargeMapManager(const UObject *WorldContextObject)
+{
+  ACarlaGameModeBase* GameMode = GetGameMode(WorldContextObject);
+  if (GameMode)
+  {
+    return GameMode->GetLMManager();
+  }
+  return nullptr;
 }

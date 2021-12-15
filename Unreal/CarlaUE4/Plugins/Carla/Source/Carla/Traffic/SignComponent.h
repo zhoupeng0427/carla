@@ -46,6 +46,10 @@ public:
   // Initialize sign (e.g. generate trigger boxes)
   virtual void InitializeSign(const cr::Map &Map);
 
+  void AddEffectTriggerVolume(UBoxComponent* TriggerVolume);
+
+  const TArray<UBoxComponent*> GetEffectTriggerVolume() const;
+
 protected:
   // Called when the game starts
   virtual void BeginPlay() override;
@@ -56,6 +60,8 @@ protected:
   TArray<std::pair<cr::RoadId, const cre::RoadInfoSignal*>>
       GetAllReferencesToThisSignal(const cr::Map &Map);
 
+  const cr::Signal* GetSignal(const cr::Map &Map) const;
+
   /// Generates a trigger box component in the parent actor
   /// BoxSize should be in Unreal units
   UBoxComponent* GenerateTriggerBox(const FTransform &BoxTransform,
@@ -64,6 +70,9 @@ protected:
 private:
 
   UPROPERTY(Category = "Traffic Sign", EditAnywhere)
-  FString SignId;
+  FString SignId = "";
+
+  UPROPERTY()
+  TArray<UBoxComponent*> EffectTriggerVolumes;
 
 };

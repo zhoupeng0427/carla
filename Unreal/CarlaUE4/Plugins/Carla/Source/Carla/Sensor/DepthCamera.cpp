@@ -28,8 +28,8 @@ ADepthCamera::ADepthCamera(const FObjectInitializer &ObjectInitializer)
   );
 }
 
-void ADepthCamera::Tick(float DeltaTime)
+void ADepthCamera::PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaSeconds)
 {
-  Super::Tick(DeltaTime);
+  TRACE_CPUPROFILER_EVENT_SCOPE(ADepthCamera::PostPhysTick);
   FPixelReader::SendPixelsInRenderThread(*this);
 }

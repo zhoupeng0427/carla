@@ -4,12 +4,16 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
+#include <PxScene.h>
+#include <cmath>
 #include "Carla.h"
 #include "Carla/Sensor/RayCastLidar.h"
 #include "Carla/Actor/ActorBlueprintFunctionLibrary.h"
+#include "carla/geom/Math.h"
 
 #include <compiler/disable-ue4-macros.h>
 #include "carla/geom/Math.h"
+#include "carla/geom/Location.h"
 #include <compiler/enable-ue4-macros.h>
 
 #include "DrawDebugHelpers.h"
@@ -21,15 +25,17 @@ FActorDefinition ARayCastLidar::GetSensorDefinition()
   return UActorBlueprintFunctionLibrary::MakeLidarDefinition(TEXT("ray_cast"));
 }
 
+
 ARayCastLidar::ARayCastLidar(const FObjectInitializer& ObjectInitializer)
-  : Super(ObjectInitializer)
-{
-  PrimaryActorTick.bCanEverTick = true;
+  : Super(ObjectInitializer) {
+
+  RandomEngine = CreateDefaultSubobject<URandomEngine>(TEXT("RandomEngine"));
+  SetSeed(Description.RandomSeed);
 }
 
 void ARayCastLidar::Set(const FActorDescription &ActorDescription)
 {
-  Super::Set(ActorDescription);
+  ASensor::Set(ActorDescription);
   FLidarDescription LidarDescription;
   UActorBlueprintFunctionLibrary::SetLidar(ActorDescription, LidarDescription);
   Set(LidarDescription);
@@ -38,132 +44,99 @@ void ARayCastLidar::Set(const FActorDescription &ActorDescription)
 void ARayCastLidar::Set(const FLidarDescription &LidarDescription)
 {
   Description = LidarDescription;
-  LidarMeasurement = FLidarMeasurement(Description.Channels);
+  LidarData = FLidarData(Description.Channels);
   CreateLasers();
+  PointsPerChannel.resize(Description.Channels);
+
+  // Compute drop off model parameters
+  DropOffBeta = 1.0f - Description.DropOffAtZeroIntensity;
+  DropOffAlpha = Description.DropOffAtZeroIntensity / Description.DropOffIntensityLimit;
+  DropOffGenActive = Description.DropOffGenRate > std::numeric_limits<float>::epsilon();
 }
 
-void ARayCastLidar::CreateLasers()
+void ARayCastLidar::PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaTime)
 {
-  const auto NumberOfLasers = Description.Channels;
-  check(NumberOfLasers > 0u);
-  const float DeltaAngle = NumberOfLasers == 1u ? 0.f :
-    (Description.UpperFovLimit - Description.LowerFovLimit) /
-    static_cast<float>(NumberOfLasers - 1);
-  LaserAngles.Empty(NumberOfLasers);
-  for(auto i = 0u; i < NumberOfLasers; ++i)
+  TRACE_CPUPROFILER_EVENT_SCOPE(ARayCastLidar::PostPhysTick);
+  SimulateLidar(DeltaTime);
+
   {
-    const float VerticalAngle =
-        Description.UpperFovLimit - static_cast<float>(i) * DeltaAngle;
-    LaserAngles.Emplace(VerticalAngle);
+    TRACE_CPUPROFILER_EVENT_SCOPE_STR("Send Stream");
+    auto DataStream = GetDataStream(*this);
+    DataStream.Send(*this, LidarData, DataStream.PopBufferFromPool());
   }
 }
 
-void ARayCastLidar::Tick(const float DeltaTime)
+float ARayCastLidar::ComputeIntensity(const FSemanticDetection& RawDetection) const
 {
-  Super::Tick(DeltaTime);
+  const carla::geom::Location HitPoint = RawDetection.point;
+  const float Distance = HitPoint.Length();
 
-  ReadPoints(DeltaTime);
+  const float AttenAtm = Description.AtmospAttenRate;
+  const float AbsAtm = exp(-AttenAtm * Distance);
 
-  auto DataStream = GetDataStream(*this);
-  DataStream.Send(*this, LidarMeasurement, DataStream.PopBufferFromPool());
+  const float IntRec = AbsAtm;
+
+  return IntRec;
 }
 
-void ARayCastLidar::ReadPoints(const float DeltaTime)
+ARayCastLidar::FDetection ARayCastLidar::ComputeDetection(const FHitResult& HitInfo, const FTransform& SensorTransf) const
 {
-  const uint32 ChannelCount = Description.Channels;
-  const uint32 PointsToScanWithOneLaser =
-    FMath::RoundHalfFromZero(
-        Description.PointsPerSecond * DeltaTime / float(ChannelCount));
+  FDetection Detection;
+  const FVector HitPoint = HitInfo.ImpactPoint;
+  Detection.point = SensorTransf.Inverse().TransformPosition(HitPoint);
 
-  if (PointsToScanWithOneLaser <= 0)
-  {
-    UE_LOG(
-        LogCarla,
-        Warning,
-        TEXT("%s: no points requested this frame, try increasing the number of points per second."),
-        *GetName());
-    return;
-  }
+  const float Distance = Detection.point.Length();
 
-  check(ChannelCount == LaserAngles.Num());
+  const float AttenAtm = Description.AtmospAttenRate;
+  const float AbsAtm = exp(-AttenAtm * Distance);
 
-  const float CurrentHorizontalAngle = carla::geom::Math::ToDegrees(
-      LidarMeasurement.GetHorizontalAngle());
-  const float AngleDistanceOfTick = Description.RotationFrequency * 360.0f * DeltaTime;
-  const float AngleDistanceOfLaserMeasure = AngleDistanceOfTick / PointsToScanWithOneLaser;
+  const float IntRec = AbsAtm;
 
-  LidarMeasurement.Reset(ChannelCount * PointsToScanWithOneLaser);
+  Detection.intensity = IntRec;
 
-  for (auto Channel = 0u; Channel < ChannelCount; ++Channel)
-  {
-    for (auto i = 0u; i < PointsToScanWithOneLaser; ++i)
-    {
-      FVector Point;
-      const float Angle = CurrentHorizontalAngle + AngleDistanceOfLaserMeasure * i;
-      if (ShootLaser(Channel, Angle, Point))
-      {
-        LidarMeasurement.WritePoint(Channel, Point);
+  return Detection;
+}
+
+  void ARayCastLidar::PreprocessRays(uint32_t Channels, uint32_t MaxPointsPerChannel) {
+    Super::PreprocessRays(Channels, MaxPointsPerChannel);
+
+    for (auto ch = 0u; ch < Channels; ch++) {
+      for (auto p = 0u; p < MaxPointsPerChannel; p++) {
+        RayPreprocessCondition[ch][p] = !(DropOffGenActive && RandomEngine->GetUniformFloat() < Description.DropOffGenRate);
       }
     }
   }
 
-  const float HorizontalAngle = carla::geom::Math::ToRadians(
-      std::fmod(CurrentHorizontalAngle + AngleDistanceOfTick, 360.0f));
-  LidarMeasurement.SetHorizontalAngle(HorizontalAngle);
-}
-
-bool ARayCastLidar::ShootLaser(const uint32 Channel, const float HorizontalAngle, FVector &XYZ) const
-{
-  const float VerticalAngle = LaserAngles[Channel];
-
-  FCollisionQueryParams TraceParams = FCollisionQueryParams(FName(TEXT("Laser_Trace")), true, this);
-  TraceParams.bTraceComplex = true;
-  TraceParams.bReturnPhysicalMaterial = false;
-
-  FHitResult HitInfo(ForceInit);
-
-  FVector LidarBodyLoc = GetActorLocation();
-  FRotator LidarBodyRot = GetActorRotation();
-  FRotator LaserRot (VerticalAngle, HorizontalAngle, 0);  // float InPitch, float InYaw, float InRoll
-  FRotator ResultRot = UKismetMathLibrary::ComposeRotators(
-    LaserRot,
-    LidarBodyRot
-  );
-  const auto Range = Description.Range;
-  FVector EndTrace = Range * UKismetMathLibrary::GetForwardVector(ResultRot) + LidarBodyLoc;
-
-  GetWorld()->LineTraceSingleByChannel(
-    HitInfo,
-    LidarBodyLoc,
-    EndTrace,
-    ECC_MAX,
-    TraceParams,
-    FCollisionResponseParams::DefaultResponseParam
-  );
-
-  if (HitInfo.bBlockingHit)
+  bool ARayCastLidar::PostprocessDetection(FDetection& Detection) const
   {
-    if (Description.ShowDebugPoints)
-    {
-      DrawDebugPoint(
-        GetWorld(),
-        HitInfo.ImpactPoint,
-        10,  //size
-        FColor(255,0,255),
-        false,  //persistent (never goes away)
-        0.1  //point leaves a trail on moving object
-      );
+    if (Description.NoiseStdDev > std::numeric_limits<float>::epsilon()) {
+      const auto ForwardVector = Detection.point.MakeUnitVector();
+      const auto Noise = ForwardVector * RandomEngine->GetNormalDistribution(0.0f, Description.NoiseStdDev);
+      Detection.point += Noise;
     }
 
-    XYZ = LidarBodyLoc - HitInfo.ImpactPoint;
-    XYZ = UKismetMathLibrary::RotateAngleAxis(
-      XYZ,
-      - LidarBodyRot.Yaw + 90,
-      FVector(0, 0, 1)
-    );
-
-    return true;
-  } else {
-    return false;
+    const float Intensity = Detection.intensity;
+    if(Intensity > Description.DropOffIntensityLimit)
+      return true;
+    else
+      return RandomEngine->GetUniformFloat() < DropOffAlpha * Intensity + DropOffBeta;
   }
-}
+
+  void ARayCastLidar::ComputeAndSaveDetections(const FTransform& SensorTransform) {
+    for (auto idxChannel = 0u; idxChannel < Description.Channels; ++idxChannel)
+      PointsPerChannel[idxChannel] = RecordedHits[idxChannel].size();
+
+    LidarData.ResetMemory(PointsPerChannel);
+
+    for (auto idxChannel = 0u; idxChannel < Description.Channels; ++idxChannel) {
+      for (auto& hit : RecordedHits[idxChannel]) {
+        FDetection Detection = ComputeDetection(hit, SensorTransform);
+        if (PostprocessDetection(Detection))
+          LidarData.WritePointSync(Detection);
+        else
+          PointsPerChannel[idxChannel]--;
+      }
+    }
+
+    LidarData.WriteChannelCount(PointsPerChannel);
+  }

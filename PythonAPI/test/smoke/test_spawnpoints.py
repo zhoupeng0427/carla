@@ -5,24 +5,28 @@
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
 import carla
+import time
 
 from . import SyncSmokeTest
 
 
 class TestSpawnpoints(SyncSmokeTest):
     def test_spawn_points(self):
-        
+        print("TestSpawnpoints.test_spawn_points")
         self.world = self.client.get_world()
         blueprints = self.world.get_blueprint_library().filter("vehicle.*")
-        
+
         # get all available maps
         maps = self.client.get_available_maps()
         for m in maps:
-            
+
             # load the map
             self.client.load_world(m)
-            self.world = self.client.get_world()
+            # workaround: give time to UE4 to clean memory after loading (old assets)
+            time.sleep(5)
             
+            self.world = self.client.get_world()
+
             # get all spawn points
             spawn_points = self.world.get_map().get_spawn_points()
 
@@ -38,7 +42,7 @@ class TestSpawnpoints(SyncSmokeTest):
             for vehicle in blueprints:
                 batch = [(vehicle, t) for t in spawn_points]
                 batch = [carla.command.SpawnActor(*args) for args in batch]
-                response = self.client.apply_batch_sync(batch, True)
+                response = self.client.apply_batch_sync(batch, False)
 
                 self.assertFalse(any(x.error for x in response))
                 ids = [x.actor_id for x in response]
@@ -61,6 +65,6 @@ class TestSpawnpoints(SyncSmokeTest):
                     self.assertAlmostEqual(t0.rotation.pitch, t1.rotation.pitch, places=2)
                     self.assertAlmostEqual(t0.rotation.yaw, t1.rotation.yaw, places=2)
                     self.assertAlmostEqual(t0.rotation.roll, t1.rotation.roll, places=2)
-                
+
                 self.client.apply_batch_sync([carla.command.DestroyActor(x) for x in ids], True)
                 frame = self.world.tick()

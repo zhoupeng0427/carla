@@ -24,8 +24,8 @@ ASemanticSegmentationCamera::ASemanticSegmentationCamera(
       TEXT("Material'/Carla/PostProcessingMaterials/GTMaterial.GTMaterial'"));
 }
 
-void ASemanticSegmentationCamera::Tick(float DeltaTime)
+void ASemanticSegmentationCamera::PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaSeconds)
 {
-  Super::Tick(DeltaTime);
+  TRACE_CPUPROFILER_EVENT_SCOPE(ASemanticSegmentationCamera::PostPhysTick);
   FPixelReader::SendPixelsInRenderThread(*this);
 }

@@ -24,7 +24,7 @@ namespace data {
 
     friend Serializer;
 
-    explicit RawEpisodeState(RawData data)
+    explicit RawEpisodeState(RawData &&data)
       : Super(Serializer::header_offset, std::move(data)) {}
 
   private:
@@ -55,6 +55,10 @@ namespace data {
     /// Simulated seconds elapsed since previous frame.
     double GetDeltaSeconds() const {
       return GetHeader().delta_seconds;
+    }
+
+    geom::Vector3DInt GetMapOrigin() const {
+      return GetHeader().map_origin;
     }
 
     /// Simulation state flags

@@ -93,6 +93,9 @@ class SimulationSynchronization(object):
         settings.fixed_delta_seconds = self.carla.step_length
         self.carla.world.apply_settings(settings)
 
+        traffic_manager = self.carla.client.get_trafficmanager()
+        traffic_manager.set_synchronous_mode(True)
+
     def tick(self):
         """
         Tick to simulation synchronization
@@ -231,7 +234,7 @@ def synchronization_loop(args):
     Entry point for sumo-carla co-simulation.
     """
     sumo_simulation = SumoSimulation(args.sumo_cfg_file, args.step_length, args.sumo_host,
-                                     args.sumo_port, args.sumo_gui)
+                                     args.sumo_port, args.sumo_gui, args.client_order)
     carla_simulation = CarlaSimulation(args.carla_host, args.carla_port, args.step_length)
 
     synchronization = SimulationSynchronization(sumo_simulation, carla_simulation, args.tls_manager,
@@ -276,12 +279,17 @@ if __name__ == '__main__':
                            metavar='P',
                            default=None,
                            type=int,
-                           help='TCP port to liston to (default: 8813)')
+                           help='TCP port to listen to (default: 8813)')
     argparser.add_argument('--sumo-gui', action='store_true', help='run the gui version of sumo')
     argparser.add_argument('--step-length',
                            default=0.05,
                            type=float,
                            help='set fixed delta seconds (default: 0.05s)')
+    argparser.add_argument('--client-order',
+                           metavar='TRACI_CLIENT_ORDER',
+                           default=1,
+                           type=int,
+                           help='client order number for the co-simulation TraCI connection (default: 1)')
     argparser.add_argument('--sync-vehicle-lights',
                            action='store_true',
                            help='synchronize vehicle lights state (default: False)')

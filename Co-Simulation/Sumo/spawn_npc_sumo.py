@@ -66,7 +66,7 @@ from util.netconvert_carla import netconvert_carla
 # ==================================================================================================
 
 
-def write_sumocfg_xml(cfg_file, net_file, vtypes_file, viewsettings_file):
+def write_sumocfg_xml(cfg_file, net_file, vtypes_file, viewsettings_file, additional_traci_clients=0):
     """
     Writes sumo configuration xml file.
     """
@@ -78,6 +78,8 @@ def write_sumocfg_xml(cfg_file, net_file, vtypes_file, viewsettings_file):
 
     gui_tag = ET.SubElement(root, 'gui_only')
     ET.SubElement(gui_tag, 'gui-settings-file', {'value': viewsettings_file})
+
+    ET.SubElement(root, 'num-clients', {'value': str(additional_traci_clients+1)})
 
     tree = ET.ElementTree(root)
     tree.write(cfg_file, pretty_print=True, encoding='UTF-8', xml_declaration=True)
@@ -109,14 +111,15 @@ def main(args):
     cfg_file = os.path.join(tmpdir, current_map.name + '.sumocfg')
     vtypes_file = os.path.join(basedir, 'examples', 'carlavtypes.rou.xml')
     viewsettings_file = os.path.join(basedir, 'examples', 'viewsettings.xml')
-    write_sumocfg_xml(cfg_file, net_file, vtypes_file, viewsettings_file)
+    write_sumocfg_xml(cfg_file, net_file, vtypes_file, viewsettings_file, args.additional_traci_clients)
 
     sumo_net = sumolib.net.readNet(net_file)
     sumo_simulation = SumoSimulation(cfg_file,
                                      args.step_length,
-                                     host=None,
-                                     port=None,
-                                     sumo_gui=args.sumo_gui)
+                                     host=args.sumo_host,
+                                     port=args.sumo_port,
+                                     sumo_gui=args.sumo_gui,
+                                     client_order=args.client_order)
 
     # ---------------
     # synchronization
@@ -140,10 +143,13 @@ def main(args):
             blueprints = [
                 x for x in blueprints if vtypes[x]['vClass'] not in ('motorcycle', 'bicycle')
             ]
-            blueprints = [x for x in blueprints if not x.endswith('isetta')]
+            blueprints = [x for x in blueprints if not x.endswith('microlino')]
             blueprints = [x for x in blueprints if not x.endswith('carlacola')]
             blueprints = [x for x in blueprints if not x.endswith('cybertruck')]
             blueprints = [x for x in blueprints if not x.endswith('t2')]
+            blueprints = [x for x in blueprints if not x.endswith('sprinter')]
+            blueprints = [x for x in blueprints if not x.endswith('firetruck')]
+            blueprints = [x for x in blueprints if not x.endswith('ambulance')]
 
         if not blueprints:
             raise RuntimeError('No blueprints available due to user restrictions.')
@@ -158,11 +164,19 @@ def main(args):
         sumo_edges = sumo_net.getEdges()
 
         for i in range(args.number_of_vehicles):
-            edge = random.choice(sumo_edges)
             type_id = random.choice(blueprints)
+            vclass = vtypes[type_id]['vClass']
 
-            traci.route.add('route_{}'.format(i), [edge.getID()])
-            traci.vehicle.add('sumo_{}'.format(i), 'route_{}'.format(i), typeID=type_id)
+            allowed_edges = [e for e in sumo_edges if e.allows(vclass)]
+            if allowed_edges:
+                edge = random.choice(allowed_edges)
+
+                traci.route.add('route_{}'.format(i), [edge.getID()])
+                traci.vehicle.add('sumo_{}'.format(i), 'route_{}'.format(i), typeID=type_id)
+            else:
+                logging.error(
+                    'Could not found a route for %s. No vehicle will be spawned in sumo',
+                    type_id)
 
         while True:
             start = time.time()
@@ -212,6 +226,13 @@ if __name__ == '__main__':
                            default=2000,
                            type=int,
                            help='TCP port to listen to (default: 2000)')
+    argparser.add_argument('--sumo-host',
+                           default=None,
+                           help='IP of the sumo host server (default: None)')
+    argparser.add_argument('--sumo-port',
+                           default=None,
+                           type=int,
+                           help='TCP port to listen to (default: None)')
     argparser.add_argument('-n',
                            '--number-of-vehicles',
                            metavar='N',
@@ -240,6 +261,16 @@ if __name__ == '__main__':
                            default=0.05,
                            type=float,
                            help='set fixed delta seconds (default: 0.05s)')
+    argparser.add_argument('--additional-traci-clients',
+                           metavar='TRACI_CLIENTS',
+                           default=0,
+                           type=int,
+                           help='number of additional TraCI clients to wait for (default: 0)')
+    argparser.add_argument('--client-order',
+                           metavar='TRACI_CLIENT_ORDER',
+                           default=1,
+                           type=int,
+                           help='client order number for the co-simulation TraCI connection (default: 1)')
     argparser.add_argument('--sync-vehicle-lights',
                            action='store_true',
                            help='synchronize vehicle lights state (default: False)')

@@ -2,13 +2,13 @@
 
 This page introduces the main features and modules in CARLA. Detailed explanations of the different subjects can be found in their corresponding page.  
 
-In order to learn about the different classes and methods in the API, take a look at the [Python API reference](python_api.md). Besides, the [Code recipes](ref_code_recipes.md) reference contains some common code chunks, specially useful during these first steps. 
+In order to learn about the different classes and methods in the API, take a look at the [Python API reference](python_api.md).
 
 *   [__First steps__](#first-steps)  
-	*   [1st- World and client](#1st-world-and-client)
-	*   [2nd- Actors and blueprints](#2nd-actors-and-blueprints)
-	*   [3rd- Maps and navigation](#3rd-maps-and-navigation)
-	*   [4th- Sensors and data](#4th-sensors-and-data)
+	*   [1st- World and client](#1st-world-and-client)  
+	*   [2nd- Actors and blueprints](#2nd-actors-and-blueprints)  
+	*   [3rd- Maps and navigation](#3rd-maps-and-navigation)  
+	*   [4th- Sensors and data](#4th-sensors-and-data)  
   *   [__Advanced steps__](#advanced-steps)  
 
 !!! Important
@@ -68,7 +68,7 @@ CARLA offers a wide range of features that go beyond the scope of this introduct
 *   [__PTV-Vissim co-simulation__](adv_ptv.md). Run a synchronous simulation between CARLA and PTV-Vissim traffic simulator.  
 *   [__Recorder__](adv_recorder.md). Saves snapshots of the simulation state to reenact a simulation with exact precision.   
 *   [__Rendering options__](adv_rendering_options.md). Graphics quality settings, off-screen rendering and a no-rendering mode.  
-*   [__RSS sensor__](adv_rss.md). This sensor is quite different from the rest. It integrates the [C++ Library for Responsibility Sensitive Safety](https://github.com/intel/ad-rss-lib), and modifies a vehicle's trajectory using safety checks.  
+*   [__RSS__](adv_rss.md). Integration of the [C++ Library for Responsibility Sensitive Safety](https://github.com/intel/ad-rss-lib) to modify a vehicle's trajectory using safety checks.
 *   [__Simulation time and synchrony__](adv_synchrony_timestep.md). Everything regarding the simulation time and server-client communication.  
 *   [__SUMO co-simulation__](adv_sumo.md). Run a synchronous simulation between CARLA and SUMO traffic simulator.  
 *   [__Traffic manager__](adv_traffic_manager.md). This module is in charge of every vehicle set to autopilot mode. It simulates traffic in the city for the simulation to look like a real urban environment.  
@@ -81,7 +81,7 @@ Keep reading to learn more. Visit the forum to post any doubts or suggestions th
 <div text-align: center>
 <div class="build-buttons">
 <p>
-<a href="https://forum.carla.org/" target="_blank" class="btn btn-neutral" title="CARLA forum">
+<a href="https://github.com/carla-simulator/carla/discussions/" target="_blank" class="btn btn-neutral" title="CARLA forum">
 CARLA forum</a>
 </p>
 </div>

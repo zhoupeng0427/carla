@@ -4,6 +4,8 @@
 // This work is licensed under the terms of the MIT license.
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
+#include "carla/geom/Math.h"
+
 #include "carla/trafficmanager/SimpleWaypoint.h"
 
 namespace carla {
@@ -130,6 +132,14 @@ namespace traffic_manager {
 
   cg::Transform SimpleWaypoint::GetTransform() const {
     return waypoint->GetTransform();
+  }
+
+  void SimpleWaypoint::SetRoadOption(RoadOption _road_option) {
+    road_option = _road_option;
+  }
+
+  RoadOption SimpleWaypoint::GetRoadOption() {
+    return road_option;
   }
 
 } // namespace traffic_manager
