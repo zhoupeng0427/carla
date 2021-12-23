@@ -15,6 +15,7 @@
 #include "Carla/Weather/Weather.h"
 
 #include "GameFramework/Pawn.h"
+#include "Materials/MaterialParameterCollectionInstance.h"
 
 #include <compiler/disable-ue4-macros.h>
 #include <carla/geom/BoundingBox.h>
@@ -95,6 +96,23 @@ public:
   double GetElapsedGameTime() const
   {
     return ElapsedGameTime;
+  }
+  
+  /// Visual game seconds
+  double GetVisualGameTime() const
+  {
+    return VisualGameTime;
+  }
+  
+  void SetVisualGameTime(double Time)
+  {
+    VisualGameTime = Time;
+
+    // update time in material parameters also
+    if (MaterialParameters)
+    {
+      MaterialParameters->SetScalarParameterValue(FName("VisualTime"), VisualGameTime);
+    }
   }
 
   /// Return the list of actor definitions that are available to be spawned this
@@ -314,11 +332,16 @@ private:
   void TickTimers(float DeltaSeconds)
   {
     ElapsedGameTime += DeltaSeconds;
+    SetVisualGameTime(VisualGameTime + DeltaSeconds);
   }
 
   const uint64 Id = 0u;
 
+  // simulation time
   double ElapsedGameTime = 0.0;
+  
+  // visual time (used by clounds and other FX that need to be deterministic)
+  double VisualGameTime = 0.0;
 
   UPROPERTY(VisibleAnywhere)
   FString MapName;
@@ -334,6 +357,9 @@ private:
 
   UPROPERTY(VisibleAnywhere)
   AWeather *Weather = nullptr;
+  
+  UPROPERTY(VisibleAnywhere)
+  UMaterialParameterCollectionInstance *MaterialParameters = nullptr;
 
   ACarlaRecorder *Recorder = nullptr;
 

@@ -47,7 +47,7 @@ void WriteTArray(std::ofstream &OutFile, const TArray<T> &InVec)
 void WriteFVector(std::ofstream &OutFile, const FVector &InObj);
 
 // write binary data from FTransform
-// void WriteFTransform(std::ofstream &OutFile, const FTransform &InObj);
+void WriteFTransform(std::ofstream &OutFile, const FTransform &InObj);
 // write binary data from FString (length + text)
 void WriteFString(std::ofstream &OutFile, const FString &InObj);
 
@@ -94,6 +94,6 @@ void ReadTArray(std::ifstream &InFile, TArray<T> &OutVec)
 void ReadFVector(std::ifstream &InFile, FVector &OutObj);
 
 // read binary data from FTransform
-// void ReadTransform(std::ifstream &InFile, FTransform &OutObj);
+void ReadTransform(std::ifstream &InFile, FTransform &OutObj);
 // read binary data from FString (length + text)
 void ReadFString(std::ifstream &InFile, FString &OutObj);

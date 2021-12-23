@@ -81,6 +81,8 @@ void ACarlaRecorder::Ticking(float DeltaSeconds)
   if (Enabled)
   {
     PlatformTime.UpdateTime();
+    VisualTime.SetTime(Episode->GetVisualGameTime());
+
     const FActorRegistry &Registry = Episode->GetActorRegistry();
 
     // through all actors in registry
@@ -113,6 +115,7 @@ void ACarlaRecorder::Ticking(float DeltaSeconds)
           if (bAdditionalData)
           {
             AddActorKinematics(View);
+            AddActorBones(View);
           }
           break;
 
@@ -309,6 +312,28 @@ void ACarlaRecorder::AddTrafficLightTime(const ATrafficLightBase& TrafficLight)
   }
 }
 
+void ACarlaRecorder::AddActorBones(FCarlaActor *CarlaActor)
+{
+  check(CarlaActor != nullptr);
+
+  // get the bones
+  FWalkerBoneControlOut Bones;
+  CarlaActor->GetBonesTransform(Bones);
+
+  CarlaRecorderWalkerBones Walker;
+  Walker.DatabaseId = CarlaActor->GetActorId();
+  for (auto &Bone : Bones.BoneTransforms) 
+  {
+    FString Name = Bone.Get<0>();
+    auto Transforms = Bone.Get<1>();
+    FVector Loc = Transforms.Relative.GetTranslation();
+    FVector Rot = Transforms.Relative.GetRotation().Euler();
+    CarlaRecorderWalkerBone Entry(Name, Loc, Rot);
+    Walker.Bones.push_back(Entry);
+  }
+  WalkersBones.Add(std::move(Walker));
+}
+
 std::string ACarlaRecorder::Start(std::string Name, FString MapName, bool AdditionalData)
 {
   // stop replayer if any in course
@@ -382,6 +407,7 @@ void ACarlaRecorder::Clear(void)
   TriggerVolumes.Clear();
   PhysicsControls.Clear();
   TrafficLightTimes.Clear();
+  WalkersBones.Clear();
 }
 
 void ACarlaRecorder::Write(double DeltaSeconds)
@@ -391,6 +417,7 @@ void ACarlaRecorder::Write(double DeltaSeconds)
 
   // start
   Frames.WriteStart(File);
+  VisualTime.Write(File);
 
   // events
   EventsAdd.Write(File);
@@ -417,6 +444,7 @@ void ACarlaRecorder::Write(double DeltaSeconds)
     PlatformTime.Write(File);
     PhysicsControls.Write(File);
     TrafficLightTimes.Write(File);
+    WalkersBones.Write(File);
   }
 
   // end
