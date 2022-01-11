@@ -21,12 +21,18 @@ import numpy.random as random
 import re
 import sys
 import weakref
+import copy
+from queue import Queue
 
 try:
     import pygame
     from pygame.locals import KMOD_CTRL
     from pygame.locals import K_ESCAPE
     from pygame.locals import K_q
+    from pygame.locals import K_2 # follow lane
+    from pygame.locals import K_3 # left
+    from pygame.locals import K_4 # right
+    from pygame.locals import K_5 # straight
 except ImportError:
     raise RuntimeError('cannot import pygame, make sure pygame package is installed')
 
@@ -60,6 +66,7 @@ from carla import ColorConverter as cc
 
 from agents.navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
 from agents.navigation.basic_agent import BasicAgent  # pylint: disable=import-error
+from agents.navigation.imitation_agent import ImitationAgent  # pylint: disable=import-error
 
 
 # ==============================================================================
@@ -111,6 +118,7 @@ class World(object):
         self.restart(args)
         self.world.on_tick(hud.on_world_tick)
         self.recording_enabled = False
+        self.control = 2
         self.recording_start = 0
 
     def restart(self, args):
@@ -214,13 +222,26 @@ class KeyboardControl(object):
     def __init__(self, world):
         world.hud.notification("Press 'H' or '?' for help.", seconds=4.0)
 
-    def parse_events(self):
+    def parse_events(self, world):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True
             if event.type == pygame.KEYUP:
                 if self._is_quit_shortcut(event.key):
                     return True
+                elif event.key == K_2:
+                    world.control = 2
+                    print("We are going lane follow")
+                elif event.key == K_3:
+                    world.control = 3
+                    print("We are going left")
+                elif event.key == K_4:
+                    world.control = 4
+                    print("We are going right")
+                elif event.key == K_5:
+                    world.control = 5
+                    print("We are going straight")
+
 
     @staticmethod
     def _is_quit_shortcut(key):
@@ -278,7 +299,7 @@ class HUD(object):
         max_col = max(1.0, max(collision))
         collision = [x / max_col for x in collision]
         vehicles = world.world.get_actors().filter('vehicle.*')
-
+        speed = 3.6 * math.sqrt(vel.x**2 + vel.y**2 + vel.z**2)
         self._info_text = [
             'Server:  % 16.0f FPS' % self.server_fps,
             'Client:  % 16.0f FPS' % clock.get_fps(),
@@ -287,12 +308,13 @@ class HUD(object):
             'Map:     % 20s' % world.map.name.split('/')[-1],
             'Simulation time: % 12s' % datetime.timedelta(seconds=int(self.simulation_time)),
             '',
-            'Speed:   % 15.0f km/h' % (3.6 * math.sqrt(vel.x**2 + vel.y**2 + vel.z**2)),
+            'Speed:   % 15.0f km/h' % (speed),
             u'Heading:% 16.0f\N{DEGREE SIGN} % 2s' % (transform.rotation.yaw, heading),
             'Location:% 20s' % ('(% 5.1f, % 5.1f)' % (transform.location.x, transform.location.y)),
             'GNSS:% 24s' % ('(% 2.6f, % 3.6f)' % (world.gnss_sensor.lat, world.gnss_sensor.lon)),
             'Height:  % 18.0f m' % transform.location.z,
-            '']
+            ''
+            'Control: % 18.0f' % world.control]
         if isinstance(control, carla.VehicleControl):
             self._info_text += [
                 ('Throttle:', control.throttle, 0.0, 1.0),
@@ -326,6 +348,8 @@ class HUD(object):
                 break
             vehicle_type = get_actor_display_name(vehicle, truncate=22)
             self._info_text.append('% 4dm %s' % (dist, vehicle_type))
+
+        return speed
 
     def toggle_info(self):
         """Toggle info on or off"""
@@ -668,6 +692,7 @@ class CameraManager(object):
             array = array[:, :, :3]
             array = array[:, :, ::-1]
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
+            # image.save_to_disk("/home/jacopobartiromo/cil_carla/current_image.jpg")
         if self.recording:
             image.save_to_disk('_out/%08d' % image.frame)
 
@@ -675,6 +700,13 @@ class CameraManager(object):
 # -- Game Loop ---------------------------------------------------------
 # ==============================================================================
 
+def sensor_callback(sensor_data, sensor_queue, sensor_name):
+    # Do stuff with the sensor_data data like save it to disk
+    # Then you just need to add to the queue
+    array = np.frombuffer(sensor_data.raw_data, dtype=np.dtype("uint8"))
+    array = copy.deepcopy(array)
+    array = np.reshape(array, (88, 200, 4))
+    sensor_queue.put((sensor_data.frame, array))
 
 def game_loop(args):
     """
@@ -713,15 +745,31 @@ def game_loop(args):
         controller = KeyboardControl(world)
         if args.agent == "Basic":
             agent = BasicAgent(world.player)
+        elif args.agent == "Imitation":
+            agent = ImitationAgent(world.player)
         else:
             agent = BehaviorAgent(world.player, behavior=args.behavior)
 
         # Set the agent destination
-        spawn_points = world.map.get_spawn_points()
-        destination = random.choice(spawn_points).location
-        agent.set_destination(destination)
+        if args.agent == "Behavior":
+            spawn_points = world.map.get_spawn_points()
+            destination = random.choice(spawn_points).location
+            agent.set_destination(destination)
 
         clock = pygame.time.Clock()
+        # We create the sensor queue in which we keep track of the information
+        # already received. This structure is thread safe and can be
+        # accessed by all the sensors callback concurrently without problem.
+        sensor_queue = Queue()
+
+        cam_bp = sim_world.get_blueprint_library().find('sensor.camera.rgb')
+        cam_location = carla.Location(1.5,0,2.4)
+        cam_rotation = carla.Rotation(0,0,0)
+        cam_transform = carla.Transform(cam_location,cam_rotation)
+        cam_bp.set_attribute("image_size_x",str(200))
+        cam_bp.set_attribute("image_size_y",str(88))
+        ego_cam = sim_world.spawn_actor(cam_bp,cam_transform,attach_to=world.player, attachment_type=carla.AttachmentType.Rigid)
+        ego_cam.listen(lambda data: sensor_callback(data, sensor_queue, "camera01"))
 
         while True:
             clock.tick()
@@ -729,23 +777,32 @@ def game_loop(args):
                 world.world.tick()
             else:
                 world.world.wait_for_tick()
-            if controller.parse_events():
+            if controller.parse_events(world):
                 return
 
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
+            if args.agent == "Behavior":
+                if agent.done():
+                    if args.loop:
+                        agent.set_destination(random.choice(spawn_points).location)
+                        world.hud.notification("The target has been reached, searching for another target", seconds=4.0)
+                        print("The target has been reached, searching for another target")
+                    else:
+                        print("The target has been reached, stopping the simulation")
+                        break
 
-            if agent.done():
-                if args.loop:
-                    agent.set_destination(random.choice(spawn_points).location)
-                    world.hud.notification("The target has been reached, searching for another target", seconds=4.0)
-                    print("The target has been reached, searching for another target")
-                else:
-                    print("The target has been reached, stopping the simulation")
-                    break
-
-            control = agent.run_step()
+            if args.agent == "Imitation":
+                vel = world.player.get_velocity()
+                speed = math.sqrt(vel.x ** 2 + vel.y ** 2 + vel.z ** 2) # it's in m/s
+                print("speed is: " + str(speed))
+                # CONTROL: 2 is follow lane, 3 is left, 4 is right, 5 is straight.
+                print(world.control)
+                s_frame = sensor_queue.get(True, 1.0)
+                control = agent.run_step(speed, world.control, s_frame[1])
+            else:
+                control = agent.run_step()
             control.manual_gear_shift = False
             world.player.apply_control(control)
 
@@ -810,7 +867,7 @@ def main():
         help='Sets a new random destination upon reaching the previous one (default: False)')
     argparser.add_argument(
         "-a", "--agent", type=str,
-        choices=["Behavior", "Basic"],
+        choices=["Behavior", "Basic", "Imitation"],
         help="select which agent to run",
         default="Behavior")
     argparser.add_argument(

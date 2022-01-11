@@ -66,6 +66,14 @@ boost::python::list InterGetNextAction(carla::traffic_manager::TrafficManager& s
   return l;
 }
 
+boost::python::list InterGetCurrentAction(carla::traffic_manager::TrafficManager& self, const ActorPtr &actor_ptr) {
+  boost::python::list l;
+  auto next_action = self.GetCurrentAction(actor_ptr->GetId());
+  l.append(RoadOptionToString(next_action.first));
+  l.append(next_action.second);
+  return l;
+}
+
 boost::python::list InterGetActionBuffer(carla::traffic_manager::TrafficManager& self, const ActorPtr &actor_ptr) {
   boost::python::list l;
   auto action_buffer = self.GetActionBuffer(actor_ptr->GetId());
@@ -111,6 +119,7 @@ void export_trafficmanager() {
     .def("set_respawn_dormant_vehicles", &carla::traffic_manager::TrafficManager::SetRespawnDormantVehicles)
     .def("set_boundaries_respawn_dormant_vehicles", &carla::traffic_manager::TrafficManager::SetBoundariesRespawnDormantVehicles)
     .def("get_next_action", &InterGetNextAction)
+    .def("get_current_action", &InterGetCurrentAction)
     .def("get_all_actions", &InterGetActionBuffer)
     .def("shut_down", &ctm::TrafficManager::ShutDown);
 }
