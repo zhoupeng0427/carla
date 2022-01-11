@@ -611,6 +611,11 @@ Action LocalizationStage::ComputeNextAction(const ActorId& actor_id) {
   return next_action;
 }
 
+Action LocalizationStage::ComputeCurrentAction(const ActorId& actor_id) {
+  auto buffer_front = buffer_map.at(actor_id).front();
+  return std::make_pair(buffer_front->GetRoadOption(), buffer_front->GetWaypoint());
+}
+
 ActionBuffer LocalizationStage::ComputeActionBuffer(const ActorId& actor_id) {
 
   auto waypoint_buffer = buffer_map.at(actor_id);

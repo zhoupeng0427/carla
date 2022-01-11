@@ -84,6 +84,8 @@ public:
 
   Action ComputeNextAction(const ActorId &actor_id);
 
+  Action ComputeCurrentAction(const ActorId& actor_id);
+
   ActionBuffer ComputeActionBuffer(const ActorId& actor_id);
 
 };

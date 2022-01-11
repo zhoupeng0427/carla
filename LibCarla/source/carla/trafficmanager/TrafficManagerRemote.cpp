@@ -261,6 +261,10 @@ Action TrafficManagerRemote::GetNextAction(const ActorId &actor_id) {
   return client.GetNextAction(actor_id);
 }
 
+Action TrafficManagerRemote::GetCurrentAction(const ActorId &actor_id) {
+  return client.GetCurrentAction(actor_id);
+}
+
 ActionBuffer TrafficManagerRemote::GetActionBuffer(const ActorId &actor_id) {
   return client.GetActionBuffer(actor_id);
 }

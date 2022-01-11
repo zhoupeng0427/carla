@@ -230,6 +230,11 @@ public:
         tm->GetNextAction(actor_id);
       });
 
+      /// Method to get the vehicle's current action.
+      server->bind("get_current_action", [=](const ActorId actor_id) {
+        tm->GetCurrentAction(actor_id);
+      });
+
       /// Method to get the vehicle's action buffer.
       server->bind("get_all_actions", [=](const ActorId actor_id) {
         tm->GetActionBuffer(actor_id);

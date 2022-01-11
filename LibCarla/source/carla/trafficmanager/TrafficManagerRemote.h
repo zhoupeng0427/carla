@@ -149,6 +149,9 @@ public:
   /// Method to get the vehicle's next action.
   Action GetNextAction(const ActorId &actor_id);
 
+  /// Method to get the vehicle's current action.
+  Action GetCurrentAction(const ActorId &actor_id);
+
   /// Method to get the vehicle's action buffer.
   ActionBuffer GetActionBuffer(const ActorId &actor_id);
 

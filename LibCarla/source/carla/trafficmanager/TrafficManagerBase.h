@@ -153,6 +153,9 @@ public:
   /// Method to get the vehicle's next action.
   virtual Action GetNextAction(const ActorId &actor_id) = 0;
 
+  /// Method to get the vehicle's current action.
+  virtual Action GetCurrentAction(const ActorId &actor_id) = 0;
+
   /// Method to get the vehicle's action buffer.
   virtual ActionBuffer GetActionBuffer(const ActorId &actor_id) = 0;
 

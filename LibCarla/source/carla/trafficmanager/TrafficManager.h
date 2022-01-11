@@ -338,6 +338,17 @@ public:
     return next_action;
   }
 
+  /// Method to get the current action.
+  Action GetCurrentAction(const ActorId &actor_id) {
+    Action next_action;
+    TrafficManagerBase* tm_ptr = GetTM(_port);
+    if (tm_ptr != nullptr) {
+      next_action = tm_ptr->GetCurrentAction(actor_id);
+      return next_action;
+    }
+    return next_action;
+  }
+
   /// Method to get the action buffer.
   ActionBuffer GetActionBuffer(const ActorId &actor_id) {
     ActionBuffer action_buffer;

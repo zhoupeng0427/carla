@@ -444,6 +444,10 @@ Action TrafficManagerLocal::GetNextAction(const ActorId &actor_id) {
   return localization_stage.ComputeNextAction(actor_id);
 }
 
+Action TrafficManagerLocal::GetCurrentAction(const ActorId &actor_id) {
+  return localization_stage.ComputeCurrentAction(actor_id);
+}
+
 ActionBuffer TrafficManagerLocal::GetActionBuffer(const ActorId &actor_id) {
   return localization_stage.ComputeActionBuffer(actor_id);
 }

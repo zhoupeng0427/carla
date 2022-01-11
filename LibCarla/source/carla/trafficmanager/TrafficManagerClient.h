@@ -278,6 +278,13 @@ public:
     return Action();
   }
 
+  /// Method to get the vehicle's next action.
+  Action GetCurrentAction(const ActorId &actor_id) {
+    DEBUG_ASSERT(_client != nullptr);
+    _client->call("get_current_action", actor_id);
+    return Action();
+  }
+
   /// Method to get the vehicle's action buffer.
   ActionBuffer GetActionBuffer(const ActorId &actor_id) {
     DEBUG_ASSERT(_client != nullptr);
