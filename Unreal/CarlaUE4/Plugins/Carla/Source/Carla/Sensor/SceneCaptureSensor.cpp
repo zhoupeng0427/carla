@@ -588,7 +588,7 @@ namespace SceneCaptureSensor_local_ns {
 
     // Ambient Occlusion
     PostProcessSettings.bOverride_AmbientOcclusionIntensity = true;
-    PostProcessSettings.AmbientOcclusionIntensity = 0.5f;
+    PostProcessSettings.AmbientOcclusionIntensity = 0.8f;
     PostProcessSettings.bOverride_AmbientOcclusionRadius = true;
     PostProcessSettings.AmbientOcclusionRadius = 100.0f;
     PostProcessSettings.bOverride_AmbientOcclusionStaticFraction = true;
