@@ -143,18 +143,17 @@ void LocalizationStage::Update(const unsigned long index) {
   const SimpleWaypointPtr front_waypoint = waypoint_buffer.front();
   const float lane_change_distance = SQUARE(std::max(10.0f * vehicle_speed, INTER_LANE_CHANGE_DISTANCE));
 
-  bool recently_not_executed_lane_change = last_lane_change_swpt.find(actor_id) == last_lane_change_swpt.end();
+  bool recently_executed_lane_change = last_lane_change_swpt.find(actor_id) != last_lane_change_swpt.end();
   bool done_with_previous_lane_change = true;
-  if (!recently_not_executed_lane_change) {
+  if (recently_executed_lane_change) {
     float distance_frm_previous = cg::Math::DistanceSquared(last_lane_change_swpt.at(actor_id)->GetLocation(), vehicle_location);
     done_with_previous_lane_change = distance_frm_previous > lane_change_distance;
+    if (done_with_previous_lane_change) last_lane_change_swpt.erase(actor_id);
   }
-  bool auto_or_force_lane_change = parameters.GetAutoLaneChange(actor_id) || force_lane_change;
+  bool auto_lane_change = parameters.GetAutoLaneChange(actor_id);
   bool front_waypoint_not_junction = !front_waypoint->CheckJunction();
-
-  if (auto_or_force_lane_change
-      && front_waypoint_not_junction
-      && (recently_not_executed_lane_change || done_with_previous_lane_change)) {
+  bool try_auto_lane_change = auto_lane_change && front_waypoint_not_junction && (!recently_executed_lane_change || done_with_previous_lane_change);
+  if (try_auto_lane_change || force_lane_change) {
 
     SimpleWaypointPtr change_over_point = AssignLaneChange(actor_id, vehicle_location, vehicle_speed,
                                                            force_lane_change, lane_change_direction);
