@@ -68,6 +68,8 @@ void UCarSimManagerComponent::BeginPlay()
   {
     Bone->SetInstanceSimulatePhysics(false);
   }
+  auto RootComponent = Cast<UPrimitiveComponent>(CarlaVehicle->GetRootComponent());
+  RootComponent->SetSimulatePhysics(false);
   // set callbacks to react to collisions
   CarlaVehicle->OnActorHit.AddDynamic(this, &UCarSimManagerComponent::OnCarSimHit);
   CarlaVehicle->GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &UCarSimManagerComponent::OnCarSimOverlap);
@@ -124,8 +126,9 @@ void UCarSimManagerComponent::OnCarSimHit(AActor *Actor,
   {
     carla::log_warning("No bone with name");
   }
+  CarlaVehicle->SetSimulatePhysics(true);
   CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-  CarlaVehicle->GetMesh()->SetCollisionProfileName("Vehicle");    
+  CarlaVehicle->GetMesh()->SetCollisionProfileName("Vehicle");
   CarlaVehicle->RestoreVehiclePhysicsControl();
   #endif
 }
@@ -158,8 +161,9 @@ void UCarSimManagerComponent::OnCarSimOverlap(UPrimitiveComponent* OverlappedCom
     {
       carla::log_warning("No bone with name");
     }
+    CarlaVehicle->SetSimulatePhysics(true);
     CarlaVehicle->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-    CarlaVehicle->GetMesh()->SetCollisionProfileName("Vehicle");    
+    CarlaVehicle->GetMesh()->SetCollisionProfileName("Vehicle");
     CarlaVehicle->RestoreVehiclePhysicsControl();
     #endif
   }
@@ -189,7 +193,7 @@ void UCarSimManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
   {
     OffsetActor->Destroy();
   }
-  
+
   if(!CarlaVehicle)
   {
     UE_LOG(LogCarla, Warning, TEXT("Error: Owner is not properly set for UCarSimManagerComponent") );
