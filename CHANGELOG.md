@@ -1,3 +1,7 @@
+## Latest
+
+  * Added API function `get_telemetry_data` to the vehicle actor.
+
 ## CARLA 0.9.13
 
   * Added new **instance aware semantic segmentation** sensor `sensor.camera.instance_segmentation`
