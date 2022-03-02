@@ -5,6 +5,7 @@
 // For a copy, see <https://opensource.org/licenses/MIT>.
 
 #include "carla/streaming/detail/tcp/Server.h"
+#include "carla/streaming/detail/tcp/ServerSession.h"
 
 #include <boost/asio/post.hpp>
 

@@ -8,6 +8,7 @@
 
 #include "carla/AtomicSharedPtr.h"
 #include "carla/Logging.h"
+#include "carla/streaming/detail/SharedMemoryBlock.h"
 #include "carla/streaming/detail/StreamStateBase.h"
 #include "carla/streaming/detail/tcp/Message.h"
 
@@ -58,13 +59,18 @@ namespace detail {
 
     void ConnectSession(std::shared_ptr<Session> session) final {
       DEBUG_ASSERT(session != nullptr);
+      session->set_shared_memory(_shared_memory);
       std::lock_guard<std::mutex> lock(_mutex);
       _sessions.emplace_back(std::move(session));
       log_debug("Connecting multistream sessions:", _sessions.size());
       if (_sessions.size() == 1) {
         _session.store(_sessions[0]);
+        // create shared memory block (TODO: only for local clients)
+        _shared_memory->create(session->GetPort(), session->get_stream_id());
+        // sends back the name of the shared memory to use
+        session->Write(_shared_memory->get_name());
       }
-      else if (_sessions.size() > 1) {
+      else {
         _session.store(nullptr);
       }
     }
@@ -104,6 +110,9 @@ namespace detail {
     AtomicSharedPtr<Session> _session;
     // if there are more than one session, we use vector of sessions with mutex
     std::vector<std::shared_ptr<Session>> _sessions;
+
+    // shared memory
+    std::shared_ptr<SharedMemoryBlock> _shared_memory;
   };
 
 } // namespace detail

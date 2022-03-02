@@ -8,7 +8,6 @@
 
 #include "carla/NonCopyable.h"
 #include "carla/Time.h"
-#include "carla/streaming/detail/tcp/ServerSession.h"
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -20,6 +19,8 @@ namespace carla {
 namespace streaming {
 namespace detail {
 namespace tcp {
+
+  class ServerSession;
 
   /// @warning This server cannot be destructed before its @a io_context is
   /// stopped.
@@ -63,11 +64,13 @@ namespace tcp {
     }
 
   private:
+    
+    using callback_function_type = std::function<void(std::shared_ptr<ServerSession>)>;
 
     void OpenSession(
         time_duration timeout,
-        ServerSession::callback_function_type on_session_opened,
-        ServerSession::callback_function_type on_session_closed);
+        callback_function_type on_session_opened,
+        callback_function_type on_session_closed);
 
     boost::asio::io_context &_io_context;
 

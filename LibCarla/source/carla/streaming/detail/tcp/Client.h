@@ -11,6 +11,7 @@
 #include "carla/profiler/LifetimeProfiled.h"
 #include "carla/streaming/detail/Token.h"
 #include "carla/streaming/detail/Types.h"
+#include "carla/streaming/detail/SharedMemoryBlock.h"
 
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_context.hpp>
@@ -62,6 +63,8 @@ namespace tcp {
 
     void Reconnect();
 
+    void ReadDataName();
+    void ReadSharedData();
     void ReadData();
 
     const token_type _token;
@@ -77,6 +80,8 @@ namespace tcp {
     std::shared_ptr<BufferPool> _buffer_pool;
 
     std::atomic_bool _done{false};
+
+    SharedMemoryBlock _shared_memory;
   };
 
 } // namespace tcp

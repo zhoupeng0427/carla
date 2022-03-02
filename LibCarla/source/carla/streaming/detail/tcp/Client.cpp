@@ -123,8 +123,8 @@ namespace tcp {
                 }
                 if (!ec) {
                   DEBUG_ASSERT_EQ(bytes, sizeof(stream_id));
-                  // If succeeded start reading data.
-                  ReadData();
+                  // If succeeded gets the name of the shared memory to read data.
+                  ReadDataName();
                 } else {
                   // Else try again.
                   log_debug("streaming client: failed to send stream id:", ec.message());
@@ -160,6 +160,69 @@ namespace tcp {
       if (!ec) {
         Connect();
       }
+    });
+  }
+
+  void Client::ReadDataName() {
+    auto self = shared_from_this();
+    boost::asio::post(_strand, [this, self]() {
+      if (_done) {
+        return;
+      }
+
+      // log_debug("streaming client: Client::ReadData");
+
+      // auto message = std::make_shared<IncomingMessage>(_buffer_pool->Pop());
+      auto buffer = _buffer_pool->Pop();
+
+      auto handle_read_name = [this, self, &buffer](boost::system::error_code ec, size_t DEBUG_ONLY(bytes)) {
+        DEBUG_ONLY(log_debug("streaming client: Client::ReadData.handle_read_data", bytes, "bytes"));
+        if (!ec) {
+          DEBUG_ASSERT_EQ(bytes, buffer.size());
+          DEBUG_ASSERT_NE(bytes, 0u);
+          // Move the buffer to the callback function and start reading the next
+          // piece of data.
+          // log_debug("streaming client: success reading data, calling the callback");
+          // boost::asio::post(_strand, [self, message]() { self->_callback(message->pop()); });
+          // create shared memory block (TODO: only for local clients)
+          _shared_memory.open((char *) buffer.data());
+          // start waiting for shared data
+          ReadSharedData();
+        } else {
+          // As usual, if anything fails start over from the very top.
+          log_debug("streaming client: failed to read data:", ec.message());
+          Connect();
+        }
+      };
+
+      buffer.resize(256);
+
+      // Read the size of the buffer that is coming.
+      boost::asio::async_read(
+          _socket,
+          boost::asio::buffer(buffer.data(), buffer.size()),
+          boost::asio::bind_executor(_strand, handle_read_name));
+    });
+  }
+
+  void Client::ReadSharedData() {
+    auto self = shared_from_this();
+    boost::asio::post(_strand, [this, self]() {
+      if (_done) {
+        return;
+      }
+
+      auto buffer = _buffer_pool->Pop();
+      
+      // wait until data is ready
+      _shared_memory.wait_for_reading([this, &buffer](uint8_t *ptr, size_t size) {
+        buffer.copy_from(ptr, size);      
+      });
+
+      boost::asio::post(_strand, [self, &buffer]() { self->_callback(std::move(buffer)); });
+
+      // repeat reading data again
+      ReadSharedData();
     });
   }
 

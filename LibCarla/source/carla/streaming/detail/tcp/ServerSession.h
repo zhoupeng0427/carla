@@ -10,8 +10,10 @@
 #include "carla/Time.h"
 #include "carla/TypeTraits.h"
 #include "carla/profiler/LifetimeProfiled.h"
+#include "carla/streaming/detail/SharedMemoryBlock.h"
 #include "carla/streaming/detail/Types.h"
 #include "carla/streaming/detail/tcp/Message.h"
+#include "carla/streaming/detail/tcp/Server.h"
 
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/io_context.hpp>
@@ -25,8 +27,6 @@ namespace carla {
 namespace streaming {
 namespace detail {
 namespace tcp {
-
-  class Server;
 
   /// A TCP server session. When a session opens, it reads from the socket a
   /// stream id object and passes itself to the callback functor. The session
@@ -67,7 +67,8 @@ namespace tcp {
 
     /// Writes some data to the socket.
     void Write(std::shared_ptr<const Message> message);
-
+    void Write(std::string text);
+    
     /// Writes some data to the socket.
     template <typename... Buffers>
     void Write(Buffers &&... buffers) {
@@ -76,6 +77,15 @@ namespace tcp {
 
     /// Post a job to close the session.
     void Close();
+
+    uint16_t GetPort() {
+      return _server.GetLocalEndpoint().port();
+    }
+
+    void set_shared_memory(std::shared_ptr<SharedMemoryBlock> shared_memory)
+    {
+      _shared_memory = shared_memory;
+    }
 
   private:
 
@@ -102,6 +112,8 @@ namespace tcp {
     callback_function_type _on_closed;
 
     bool _is_writing = false;
+
+    std::shared_ptr<SharedMemoryBlock> _shared_memory;
   };
 
 } // namespace tcp

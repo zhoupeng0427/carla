@@ -59,6 +59,7 @@ namespace tcp {
         if (!ec) {
           DEBUG_ASSERT_EQ(bytes_received, sizeof(_stream_id));
           log_debug("session", _session_id, "for stream", _stream_id, " started");
+          // register session
           boost::asio::post(_strand.context(), [=]() { callback(self); });
         } else {
           log_error("session", _session_id, ": error retrieving stream id :", ec.message());
@@ -78,6 +79,19 @@ namespace tcp {
   void ServerSession::Write(std::shared_ptr<const Message> message) {
     DEBUG_ASSERT(message != nullptr);
     DEBUG_ASSERT(!message->empty());
+    
+    // uses shared memory only
+    _shared_memory->wait_for_writing([&](uint8_t *ptr, size_t size) {
+      auto buffers = message->GetBufferSequence();
+      _shared_memory->resize(message->size());
+      // TODO: after resizing do we have the same address always?
+      for (auto &&buf : buffers) {
+        memcpy(ptr, buf.data(), buf.size());
+        ptr += buf.size();
+      }
+    });
+    return;
+
     auto self = shared_from_this();
     boost::asio::post(_strand, [=]() {
       if (!_socket.is_open()) {
@@ -114,7 +128,26 @@ namespace tcp {
       boost::asio::async_write(
           _socket,
           message->GetBufferSequence(),
-          handle_sent);
+          handle_sent);      
+    });
+  }
+
+  void ServerSession::Write(std::string text) {
+    auto self = shared_from_this();
+    boost::asio::post(_strand, [=]() {
+      if (!_socket.is_open()) {
+        return;
+      }
+      _is_writing = true;
+
+      auto handle_sent = [this, self](const boost::system::error_code &ec, size_t DEBUG_ONLY(bytes)) {
+        _is_writing = false;
+      };
+      _deadline.expires_from_now(_timeout);
+      boost::asio::async_write(
+          _socket,
+          boost::asio::buffer(text.c_str(), text.size()),
+          handle_sent);      
     });
   }
 
