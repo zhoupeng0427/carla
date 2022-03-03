@@ -81,6 +81,7 @@ namespace tcp {
 
     std::atomic_bool _done{false};
 
+    std::string _shared_memory_name;
     SharedMemoryBlock _shared_memory;
   };
 

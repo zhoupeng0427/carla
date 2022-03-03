@@ -14,6 +14,7 @@
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/read.hpp>
+#include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/bind_executor.hpp>
@@ -164,28 +165,32 @@ namespace tcp {
   }
 
   void Client::ReadDataName() {
+    // log_debug("ReadDataName called!!");
     auto self = shared_from_this();
     boost::asio::post(_strand, [this, self]() {
       if (_done) {
         return;
       }
 
-      // log_debug("streaming client: Client::ReadData");
 
       // auto message = std::make_shared<IncomingMessage>(_buffer_pool->Pop());
-      auto buffer = _buffer_pool->Pop();
+      // auto buffer = _buffer_pool->Pop();
+      // log_debug("getting buffer from pool");
+      // buffer.reset((uint64_t) 252);
+      // memset(buffer.data(), 0, buffer.size());
 
-      auto handle_read_name = [this, self, &buffer](boost::system::error_code ec, size_t DEBUG_ONLY(bytes)) {
-        DEBUG_ONLY(log_debug("streaming client: Client::ReadData.handle_read_data", bytes, "bytes"));
+      auto handle_read_name = [this, self](boost::system::error_code ec, size_t bytes) {
+        log_debug("streaming client: Client::ReadData.handle_read_data", bytes, "bytes");
         if (!ec) {
-          DEBUG_ASSERT_EQ(bytes, buffer.size());
+          DEBUG_ASSERT_EQ(bytes, _shared_memory_name.size());
           DEBUG_ASSERT_NE(bytes, 0u);
           // Move the buffer to the callback function and start reading the next
           // piece of data.
           // log_debug("streaming client: success reading data, calling the callback");
           // boost::asio::post(_strand, [self, message]() { self->_callback(message->pop()); });
           // create shared memory block (TODO: only for local clients)
-          _shared_memory.open((char *) buffer.data());
+          log_debug("opening shared memory block with name ", (char *) _shared_memory_name.c_str());
+          _shared_memory.open(_shared_memory_name);
           // start waiting for shared data
           ReadSharedData();
         } else {
@@ -195,17 +200,20 @@ namespace tcp {
         }
       };
 
-      buffer.resize(256);
 
       // Read the size of the buffer that is coming.
-      boost::asio::async_read(
+      // log_debug("posting task to read name of shared memory");
+      boost::asio::async_read_until(
           _socket,
-          boost::asio::buffer(buffer.data(), buffer.size()),
+           boost::asio::dynamic_buffer(_shared_memory_name),
+          '\0',
           boost::asio::bind_executor(_strand, handle_read_name));
     });
   }
 
   void Client::ReadSharedData() {
+    // log_debug("ReadSharedData called!!");
+
     auto self = shared_from_this();
     boost::asio::post(_strand, [this, self]() {
       if (_done) {
@@ -215,11 +223,30 @@ namespace tcp {
       auto buffer = _buffer_pool->Pop();
       
       // wait until data is ready
+      // log_debug("waiting signal to read");
       _shared_memory.wait_for_reading([this, &buffer](uint8_t *ptr, size_t size) {
-        buffer.copy_from(ptr, size);      
+        // log_debug("reading  data from server:", size);
+        buffer.copy_from(ptr, size);
       });
 
-      boost::asio::post(_strand, [self, &buffer]() { self->_callback(std::move(buffer)); });
+        // for (int i=0; i<50; ++i) {
+        //   log_debug("shared1", i);
+        //   log_debug((int)buffer[i]);
+        // }
+
+      // log_debug("calling callback of listen");
+      boost::asio::post(_strand, [self, buf=std::move(buffer)]() { 
+        // log_debug("Buffer: ", buf.size());
+        // if (buf.data()) {
+          // for (int i=0; i<50; ++i) {
+          //   log_debug("shared2", i);
+          //   log_debug((int)buf[i]);
+          // }
+        // }
+
+        auto message = std::make_shared<IncomingMessage>((Buffer &&) std::move(buf));
+        self->_callback(message->pop()); 
+      });
 
       // repeat reading data again
       ReadSharedData();
@@ -227,6 +254,8 @@ namespace tcp {
   }
 
   void Client::ReadData() {
+    log_debug("ReadData called!!");
+    return;
     auto self = shared_from_this();
     boost::asio::post(_strand, [this, self]() {
       if (_done) {

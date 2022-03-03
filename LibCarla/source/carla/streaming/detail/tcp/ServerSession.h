@@ -112,7 +112,7 @@ namespace tcp {
     callback_function_type _on_closed;
 
     bool _is_writing = false;
-
+    
     std::shared_ptr<SharedMemoryBlock> _shared_memory;
   };
 

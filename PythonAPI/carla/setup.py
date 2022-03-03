@@ -53,9 +53,9 @@ def get_libcarla_extensions():
                 os.path.join(pwd, 'dependencies/lib/libDetourCrowd.a'),
                 os.path.join(pwd, 'dependencies/lib/libosm2odr.a'),
                 os.path.join(pwd, 'dependencies/lib/libxerces-c.a')]
-            extra_link_args += ['-lz']
+            extra_link_args += ['-lz' , '-lrt']
             extra_compile_args = [
-                '-isystem', 'dependencies/include/system', '-fPIC', '-std=c++14',
+                '-isystem', 'dependencies/include/system',  '-fPIC', '-std=c++14',
                 '-Werror', '-Wall', '-Wextra', '-Wpedantic', '-Wno-self-assign-overloaded',
                 '-Wdeprecated', '-Wno-shadow', '-Wuninitialized', '-Wunreachable-code',
                 '-Wpessimizing-move', '-Wold-style-cast', '-Wnull-dereference',

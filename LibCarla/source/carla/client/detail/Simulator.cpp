@@ -370,6 +370,7 @@ namespace detail {
       const Sensor &sensor,
       std::function<void(SharedPtr<sensor::SensorData>)> callback) {
     DEBUG_ASSERT(_episode != nullptr);
+    log_debug("Simulator::SubscribeToSensor");
     _client.SubscribeToStream(
         sensor.GetActorDescription().GetStreamToken(),
         [cb=std::move(callback), ep=WeakEpisodeProxy{shared_from_this()}](auto buffer) {

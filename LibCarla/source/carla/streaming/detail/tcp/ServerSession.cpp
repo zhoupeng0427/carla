@@ -77,20 +77,10 @@ namespace tcp {
   }
 
   void ServerSession::Write(std::shared_ptr<const Message> message) {
+    log_debug("Ignoring writing through TCP");
+    return;
     DEBUG_ASSERT(message != nullptr);
     DEBUG_ASSERT(!message->empty());
-    
-    // uses shared memory only
-    _shared_memory->wait_for_writing([&](uint8_t *ptr, size_t size) {
-      auto buffers = message->GetBufferSequence();
-      _shared_memory->resize(message->size());
-      // TODO: after resizing do we have the same address always?
-      for (auto &&buf : buffers) {
-        memcpy(ptr, buf.data(), buf.size());
-        ptr += buf.size();
-      }
-    });
-    return;
 
     auto self = shared_from_this();
     boost::asio::post(_strand, [=]() {
@@ -140,14 +130,20 @@ namespace tcp {
       }
       _is_writing = true;
 
-      auto handle_sent = [this, self](const boost::system::error_code &ec, size_t DEBUG_ONLY(bytes)) {
+      auto handle_sent = [this, self](const boost::system::error_code &ec, size_t bytes) {
+        if (!ec)
+          log_debug("Sent bytes: ", bytes);
+        else
+          log_debug("Error sending bytes: ", bytes);
         _is_writing = false;
       };
+
       _deadline.expires_from_now(_timeout);
+      log_debug("Sending name of shared memory block: ", text.c_str());
       boost::asio::async_write(
           _socket,
-          boost::asio::buffer(text.c_str(), text.size()),
-          handle_sent);      
+          boost::asio::buffer(text.c_str(), text.size()+1),
+          boost::asio::bind_executor(_strand, handle_sent));      
     });
   }
 

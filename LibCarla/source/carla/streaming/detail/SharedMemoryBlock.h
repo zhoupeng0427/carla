@@ -31,12 +31,12 @@ class SharedMemoryBlock
   // create memory for writing
   bool create(const char *name);
   bool create(std::string name);
-  bool create(stream_id_type stream_id, uint16_t port);
+  bool create(uint16_t port, stream_id_type stream_id);
   
   // open memory for reading
   bool open(const char *name);
   bool open(std::string name);
-  bool open(stream_id_type stream_id, uint16_t port);
+  bool open(uint16_t port, stream_id_type stream_id);
   
   bool resize(std::size_t size);
   std::size_t get_size();

@@ -53,10 +53,17 @@ using namespace std::chrono_literals;
   void Episode::Listen() {
     std::weak_ptr<Episode> weak = shared_from_this();
     _client.SubscribeToStream(_token, [weak](auto buffer) {
+      // log_debug("executing callback Episode::Listen");
+      if (buffer.size() == 0) return;
       auto self = weak.lock();
       if (self != nullptr) {
-
+        // log_debug("start deserializing");
+        // for (int i=0; i<50; ++i) {
+          // log_debug("deserial", i);
+          // log_debug((int)buffer[i]);
+        // }
         auto data = sensor::Deserializer::Deserialize(std::move(buffer));
+        // log_debug("end deserializing");
         auto next = std::make_shared<const EpisodeState>(CastData(*data));
         auto prev = self->GetState();
 
