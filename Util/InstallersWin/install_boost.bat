@@ -128,6 +128,7 @@ b2 -j%NUMBER_OF_ASYNC_JOBS%^
     --with-filesystem^
     --with-python^
     --with-date_time^
+    --with-regex^
     architecture=x86^
     address-model=64^
     toolset=%TOOLSET%^

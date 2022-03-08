@@ -39,7 +39,6 @@ class SharedMemoryBlock
   bool open(uint16_t port, stream_id_type stream_id);
   
   bool resize(std::size_t size);
-  std::size_t get_size();
   std::string get_name();
 
   // synchronization
@@ -54,6 +53,7 @@ class SharedMemoryBlock
   std::string                                  _mutex_name;
   std::string                                  _condition_name;
   std::unique_ptr<bi::shared_memory_object>    _memory;
+  std::unique_ptr<bi::mapped_region>           _region;
   std::unique_ptr<bi::named_upgradable_mutex>  _mutex;
   std::unique_ptr<bi::named_condition_any>     _condition;
 };

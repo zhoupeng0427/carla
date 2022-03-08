@@ -138,8 +138,8 @@ namespace detail {
       _sessions.clear();
       _session.store(nullptr);
       // destroy shared memory
-    _shared_memory.reset();
-    log_debug("Disconnecting all multistream sessions");
+      _shared_memory.reset();
+      log_debug("Disconnecting all multistream sessions");
     }
 
     std::mutex _mutex;

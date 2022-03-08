@@ -212,7 +212,7 @@ namespace tcp {
   }
 
   void Client::ReadSharedData() {
-    // log_debug("ReadSharedData called!!");
+    log_debug("ReadSharedData called!!");
 
     auto self = shared_from_this();
     boost::asio::post(_strand, [this, self]() {
@@ -223,27 +223,19 @@ namespace tcp {
       auto buffer = _buffer_pool->Pop();
       
       // wait until data is ready
-      // log_debug("waiting signal to read");
+      log_debug("waiting signal to read");
       _shared_memory.wait_for_reading([this, &buffer](uint8_t *ptr, size_t size) {
-        // log_debug("reading  data from server:", size);
+        log_debug("reading  data from server:", size);
         buffer.copy_from(ptr, size);
       });
 
-        // for (int i=0; i<50; ++i) {
-        //   log_debug("shared1", i);
-        //   log_debug((int)buffer[i]);
-        // }
+      if (_done) {
+        log_debug("done after signal");
+        return;
+      }
 
-      // log_debug("calling callback of listen");
-      boost::asio::post(_strand, [self, buf=std::move(buffer)]() { 
-        // log_debug("Buffer: ", buf.size());
-        // if (buf.data()) {
-          // for (int i=0; i<50; ++i) {
-          //   log_debug("shared2", i);
-          //   log_debug((int)buf[i]);
-          // }
-        // }
-
+      boost::asio::post(_strand, [self, buf=std::move(buffer)]() {
+        log_debug("calling callback of listen");
         auto message = std::make_shared<IncomingMessage>((Buffer &&) std::move(buf));
         self->_callback(message->pop()); 
       });

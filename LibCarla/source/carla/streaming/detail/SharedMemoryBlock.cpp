@@ -20,6 +20,7 @@ namespace detail {
 SharedMemoryBlock::~SharedMemoryBlock() {
   // delete objects
   _memory.reset();
+  _region.reset();
   _mutex.reset();
   _condition.reset();
 
@@ -53,14 +54,16 @@ void SharedMemoryBlock::remove_named_objects(const char *name) {
 bool SharedMemoryBlock::create(const char *name) {
   remove_named_objects(name);
   
-  log_debug("Creating ", name);
-_memory = std::make_unique<bi::shared_memory_object>(bi::open_or_create, name, bi::read_write);
-  
   if (!create_mutex(name))
     return false;
 
-  // forces a size of 100 by at start
-  resize(100);
+  log_debug("Creating ", name);
+  _memory = std::make_unique<bi::shared_memory_object>(bi::open_or_create, name, bi::read_write);
+  
+  // resize to allow for the first size_t field
+  resize(0);
+
+  _region = std::make_unique<bi::mapped_region>(*_memory, bi::read_write);
 
   _name = name;
   return true;
@@ -77,11 +80,13 @@ bool SharedMemoryBlock::create(uint16_t port, stream_id_type stream_id) {
 }
 
 bool SharedMemoryBlock::open(const char *name) {
+  if (!create_mutex(name))
+    return false;
+
   log_debug("Opening ", name);
   _memory = std::make_unique<bi::shared_memory_object>(bi::open_only, name, bi::read_only);
 
-  if (!create_mutex(name))
-    return false;
+  _region = std::make_unique<bi::mapped_region>(*_memory, bi::read_only);
 
   _name = name;
   return true;
@@ -98,20 +103,25 @@ bool SharedMemoryBlock::open(uint16_t port, stream_id_type stream_id) {
 }
 
 bool SharedMemoryBlock::resize(std::size_t size) {
+  if (!_mutex) return false;
+
+  bi::scoped_lock<bi::named_upgradable_mutex> locker(*_mutex);
+  std::size_t size_needed = size + sizeof(std::size_t);
+
   bi::offset_t currentSize;
   _memory->get_size(currentSize);
-  if (currentSize != size)
-    _memory->truncate(size);
+  if (size_needed != currentSize) {
+    if (size_needed > currentSize) {
+      log_debug("Remapping for writing,", size_needed);
+      _memory->truncate(size_needed);
+      _region = std::make_unique<bi::mapped_region>(*_memory, bi::read_write);
+    }
+    // set the new size
+    std::size_t *ptr = static_cast<std::size_t *>(_region->get_address());
+    ptr[0] = size;
+  }
 
   return true;
-}
-
-std::size_t SharedMemoryBlock::get_size() {
-  bi::offset_t size;
-  if (_memory->get_size(size))
-    return size;
-  else
-    return 0;
 }
 
 std::string SharedMemoryBlock::get_name() {
@@ -133,34 +143,57 @@ bool SharedMemoryBlock::create_mutex(const char *name) {
 }
 
 void SharedMemoryBlock::wait_for_writing(std::function<void(uint8_t *ptr, size_t size)> callback) {
-  if (!_mutex) return;
+  if (!_mutex) {
+    log_debug("Mutex error for writing");
+    return;
+  }
+  if (!_region) {
+    log_debug("Region error for writing");
+    return;
+  }
+
+  log_debug("Mutex lock for writing");
   bi::scoped_lock<bi::named_upgradable_mutex> locker(*_mutex);
-  // log_debug("Mutex lock for writing");
-  bi::mapped_region region(*_memory, bi::read_write);
-  // log_debug("Mapped memory for writing");
-  uint8_t *ptr = static_cast<uint8_t *>(region.get_address());
+  
+  uint8_t *ptr = static_cast<uint8_t *>(_region->get_address());
+  std::size_t *size_ptr = static_cast<std::size_t *>(_region->get_address());
   if (ptr != nullptr) {
     // log_debug("Executing lambda for writing");
-    callback(ptr, region.get_size());
-    // log_debug("Notifying all clients");
+    callback(ptr + sizeof(std::size_t), *size_ptr);
+    log_debug("Notifying all clients");
     _condition->notify_all();
   }
-  // log_debug("End of writing");
+  log_debug("End of writing");
 }
 
 void SharedMemoryBlock::wait_for_reading(std::function<void(uint8_t *ptr, size_t size)> callback) {
-  if (!_mutex) return;
-  bi::sharable_lock<bi::named_upgradable_mutex> locker(*_mutex/*, bi::defer_lock*/);
-  // log_debug("Mutex lock for reading");
+  if (!_mutex || !_region) return;
+
+  log_debug("Mutex lock for reading");
+  bi::sharable_lock<bi::named_upgradable_mutex> locker(*_mutex);
   _condition->wait(locker);
-  bi::mapped_region region(*_memory, bi::read_only);
-  // log_debug("Mapped memory for reading");
-  uint8_t *ptr = static_cast<uint8_t *>(region.get_address());
-  if (ptr != nullptr) {
-    // log_debug("Executing lambda for reading");
-    callback(ptr, region.get_size());
+  log_debug("After signal for reading");
+
+  // check if it is still valid, after the wait
+  if (!_mutex || !_region) {
+    log_debug("Reading no valide");
+    return;
   }
-  // log_debug("End of reading");
+
+  // check to remap memory
+  std::size_t *size_ptr = static_cast<std::size_t *>(_region->get_address());
+  if (size_ptr && size_ptr[0] > _region->get_size()) {
+    log_debug("Remapping for reading,", *size_ptr);
+    _region = std::make_unique<bi::mapped_region>(*_memory, bi::read_only);
+    size_ptr = static_cast<std::size_t *>(_region->get_address());
+  }
+
+  uint8_t *ptr = static_cast<uint8_t *>(_region->get_address());
+  if (ptr != nullptr) {
+    log_debug("Executing lambda for reading");
+    callback(ptr + sizeof(std::size_t), *size_ptr);
+  }
+  log_debug("End of reading");
 }
 
 } // namespace detail
