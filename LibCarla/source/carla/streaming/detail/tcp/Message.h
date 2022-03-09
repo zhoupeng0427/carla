@@ -75,6 +75,12 @@ namespace tcp {
       return MakeListView(begin, begin + _number_of_buffers + 1u);
     }
 
+    auto GetBufferSequenceWithoutSize() const {
+      auto begin = _buffer_views.begin();
+      ++begin;
+      return MakeListView(begin, begin + _number_of_buffers);
+    }
+
   private:
 
     message_size_type _number_of_buffers = 0u;

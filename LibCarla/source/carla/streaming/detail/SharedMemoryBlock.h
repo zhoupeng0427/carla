@@ -23,6 +23,11 @@ namespace detail {
 
 namespace bi = boost::interprocess;
 
+struct SharedMemoryBlockHeader {
+  std::size_t id;
+  std::size_t size;
+};
+
 class SharedMemoryBlock
 {
   public:
@@ -56,6 +61,7 @@ class SharedMemoryBlock
   std::unique_ptr<bi::mapped_region>           _region;
   std::unique_ptr<bi::named_upgradable_mutex>  _mutex;
   std::unique_ptr<bi::named_condition_any>     _condition;
+  std::size_t                                  id = 0;
 };
 
 } // namespace detail

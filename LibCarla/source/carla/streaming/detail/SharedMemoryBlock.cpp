@@ -60,7 +60,7 @@ bool SharedMemoryBlock::create(const char *name) {
   log_debug("Creating ", name);
   _memory = std::make_unique<bi::shared_memory_object>(bi::open_or_create, name, bi::read_write);
   
-  // resize to allow for the first size_t field
+  // resize to allow for the header at the beginning
   resize(0);
 
   _region = std::make_unique<bi::mapped_region>(*_memory, bi::read_write);
@@ -106,7 +106,7 @@ bool SharedMemoryBlock::resize(std::size_t size) {
   if (!_mutex) return false;
 
   bi::scoped_lock<bi::named_upgradable_mutex> locker(*_mutex);
-  std::size_t size_needed = size + sizeof(std::size_t);
+  std::size_t size_needed = size + sizeof(SharedMemoryBlockHeader);
 
   bi::offset_t currentSize;
   _memory->get_size(currentSize);
@@ -117,8 +117,8 @@ bool SharedMemoryBlock::resize(std::size_t size) {
       _region = std::make_unique<bi::mapped_region>(*_memory, bi::read_write);
     }
     // set the new size
-    std::size_t *ptr = static_cast<std::size_t *>(_region->get_address());
-    ptr[0] = size;
+    SharedMemoryBlockHeader *header_ptr = static_cast<SharedMemoryBlockHeader *>(_region->get_address());
+    header_ptr->size = size;
   }
 
   return true;
@@ -156,10 +156,12 @@ void SharedMemoryBlock::wait_for_writing(std::function<void(uint8_t *ptr, size_t
   bi::scoped_lock<bi::named_upgradable_mutex> locker(*_mutex);
   
   uint8_t *ptr = static_cast<uint8_t *>(_region->get_address());
-  std::size_t *size_ptr = static_cast<std::size_t *>(_region->get_address());
+  SharedMemoryBlockHeader *header_ptr = static_cast<SharedMemoryBlockHeader *>(_region->get_address());
   if (ptr != nullptr) {
+    // increment the id
+    ++header_ptr->id;
     // log_debug("Executing lambda for writing");
-    callback(ptr + sizeof(std::size_t), *size_ptr);
+    callback(ptr + sizeof(SharedMemoryBlockHeader), header_ptr->size);
     log_debug("Notifying all clients");
     _condition->notify_all();
   }
@@ -171,7 +173,10 @@ void SharedMemoryBlock::wait_for_reading(std::function<void(uint8_t *ptr, size_t
 
   log_debug("Mutex lock for reading");
   bi::sharable_lock<bi::named_upgradable_mutex> locker(*_mutex);
-  _condition->wait(locker);
+  SharedMemoryBlockHeader *header_ptr = static_cast<SharedMemoryBlockHeader *>(_region->get_address());
+  _condition->wait(locker, [this_id=id, ptr=header_ptr]() {
+    return this_id < ptr->id;
+  });
   log_debug("After signal for reading");
 
   // check if it is still valid, after the wait
@@ -181,17 +186,18 @@ void SharedMemoryBlock::wait_for_reading(std::function<void(uint8_t *ptr, size_t
   }
 
   // check to remap memory
-  std::size_t *size_ptr = static_cast<std::size_t *>(_region->get_address());
-  if (size_ptr && size_ptr[0] > _region->get_size()) {
-    log_debug("Remapping for reading,", *size_ptr);
+  if (header_ptr && header_ptr->size > _region->get_size()) {
+    log_debug("Remapping for reading,", header_ptr->size);
     _region = std::make_unique<bi::mapped_region>(*_memory, bi::read_only);
-    size_ptr = static_cast<std::size_t *>(_region->get_address());
+    header_ptr = static_cast<SharedMemoryBlockHeader *>(_region->get_address());
   }
 
   uint8_t *ptr = static_cast<uint8_t *>(_region->get_address());
   if (ptr != nullptr) {
+    // update last id read
+    id = header_ptr->id;
     log_debug("Executing lambda for reading");
-    callback(ptr + sizeof(std::size_t), *size_ptr);
+    callback(ptr + sizeof(SharedMemoryBlockHeader), header_ptr->size);
   }
   log_debug("End of reading");
 }

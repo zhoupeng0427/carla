@@ -39,26 +39,13 @@ namespace detail {
 
     // uses shared memory only
     if (_shared_memory) {
-      // log_debug("Writing using shared memory!!");
-      // log_debug("Resizing buffer:", message->size());
       _shared_memory->resize(message->size());
       _shared_memory->wait_for_writing([&, message](uint8_t *ptr, size_t) {
-        auto buffers = message->GetBufferSequence();
-        // TODO: after resizing do we have the same address always?
-        auto ptr2 = ptr;
-        int i = 0;
+        auto buffers = message->GetBufferSequenceWithoutSize();
         for (auto &&buf : buffers) {
-        // skip size of buffer (first buffer is 4 by with size of next buffers)
-          if (i > 0) {
-            // log_debug("message buffer:", buf.size());
-            memcpy(ptr, buf.data(), buf.size());
-            ptr += buf.size();
-          }
-          ++i;
+          memcpy(ptr, buf.data(), buf.size());
+          ptr += buf.size();
         }
-        // FILE *f = fopen("episode.bin", "wb");
-        // fwrite(ptr2, 1, message->size(), f);
-        // fclose(f);
       });
       return; 
 
