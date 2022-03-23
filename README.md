@@ -30,6 +30,23 @@ paper, check out
 * NVIDIA RTX 2070 / NVIDIA RTX 2080 / NVIDIA RTX 3070, NVIDIA RTX 3080
 * Ubuntu 18.04
 
+### Unreal Engine CARLA fork
+
+To build CARLA, you first need to clone and build the CARLA fork
+of the Unreal Engine version 4.26. Ensure you update this when you are updating from a previous version of CARLA. Follow these steps to clone and build the Unreal Engine:
+
+__1.__ Follow [this guide](https://www.unrealengine.com/en-US/ue4-on-github) to link your GitHub account with Epic Games
+
+__2.__ Clone CARLA fork of Unreal Engine 4.26:
+
+```sh
+    git clone --depth 1 -b carla https://github.com/CarlaUnreal/UnrealEngine.git ~/UnrealEngine_4.26
+```
+
+__3.__ Inside the cloned repository run `Setup.sh` and `GenerateProjectFiles.sh` or the equivalent .bat files in Windows. Then run make.
+
+__4.__ Set the Unreal Engine environment variable. Add a new environment variable named `UE4_ROOT` pointing to the location of the Unreal Engine 4.26 repository you cloned and built.
+
 ## CARLA Ecosystem
 Repositories associated to the CARLA simulation platform:
 
