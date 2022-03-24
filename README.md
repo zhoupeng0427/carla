@@ -31,13 +31,14 @@ paper, check out
 * Ubuntu 18.04
 
 ### Unreal Engine CARLA fork
+---
 
 To build CARLA, you first need to clone and build the CARLA fork
 of the Unreal Engine version 4.26. Ensure you update this when you are updating from a previous version of CARLA. Follow these steps to clone and build the Unreal Engine:
 
 __1.__ Follow [this guide](https://www.unrealengine.com/en-US/ue4-on-github) to link your GitHub account with Epic Games
 
-__2.__ Clone CARLA fork of Unreal Engine 4.26:
+__2.__ Clone the CARLA fork of Unreal Engine 4.26:
 
 ```sh
     git clone --depth 1 -b carla https://github.com/CarlaUnreal/UnrealEngine.git ~/UnrealEngine_4.26
