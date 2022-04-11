@@ -193,6 +193,9 @@ void ACarlaWheeledVehicle::BeginPlay()
     MovementComponent->WheelSetups = NewWheelSetups;
 
     LastPhysicsControl = GetVehiclePhysicsControl();
+
+    // Update physics in the Ackermann Controller
+    AckermannController.UpdateVehiclePhysics(this);
   }
 }
 
@@ -261,6 +264,11 @@ float ACarlaWheeledVehicle::GetMaximumSteerAngle() const
 
 void ACarlaWheeledVehicle::FlushVehicleControl()
 {
+  if (bAckermannControlActive) {
+    AckermannController.UpdateVehicleState(this);
+    AckermannController.RunLoop(InputControl.Control);
+  }
+
   BaseMovementComponent->ProcessControl(InputControl.Control);
   InputControl.Control.bReverse = InputControl.Control.Gear < 0;
   LastAppliedControl = InputControl.Control;
@@ -721,6 +729,9 @@ void ACarlaWheeledVehicle::ApplyVehiclePhysicsControl(const FVehiclePhysicsContr
   {
     Recorder->AddPhysicsControl(*this);
   }
+
+  // Update physics in the Ackermann Controller
+  AckermannController.UpdateVehiclePhysics(this);
 }
 
 void ACarlaWheeledVehicle::ActivateVelocityControl(const FVector &Velocity)
