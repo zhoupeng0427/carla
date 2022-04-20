@@ -80,7 +80,10 @@ namespace sensor {
   inline Buffer CompositeSerializer<Items...>::Serialize(Sensor &sensor, Args &&... args) {
     using TheSensor = typename std::remove_const<Sensor>::type;
     using Serializer = typename Super::template get<TheSensor*>::type;
-    return Serializer::Serialize(sensor, std::forward<Args>(args)...);
+    // log_info("Start serializing sensor...");
+    auto result = Serializer::Serialize(sensor, std::forward<Args>(args)...);
+    // log_info("End serializing sensor");
+    return result;
   }
 
   template <typename... Items>
@@ -88,7 +91,10 @@ namespace sensor {
   CompositeSerializer<Items...>::Deserialize(Buffer &&data) {
     RawData message{std::move(data)};
     size_t index = message.GetSensorTypeId();
-    return Deserialize(index, std::move(message));
+    // log_info("Start deserializing sensor type", index);
+    auto result = Deserialize(index, std::move(message));
+    // log_info("End deserializing sensor type", index);
+    return result;
   }
 
 } // namespace sensor

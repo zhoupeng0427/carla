@@ -29,6 +29,7 @@
 #include <compiler/disable-ue4-macros.h>
 #include <carla/Functional.h>
 #include <carla/multigpu/router.h>
+#include <carla/Logging.h>
 #include <carla/Version.h>
 #include <carla/rpc/AckermannControllerSettings.h>
 #include <carla/rpc/Actor.h>
@@ -265,6 +266,7 @@ void FCarlaServer::FPimpl::BindActions()
   {
     TRACE_CPUPROFILER_EVENT_SCOPE(TickCueReceived);
     (void)TickCuesReceived.fetch_add(1, std::memory_order_release);
+    carla::log_info("tick received");
     return FCarlaEngine::GetFrameCounter();
   };
 
@@ -2368,6 +2370,7 @@ void FCarlaServer::RunSome(uint32 Milliseconds)
 void FCarlaServer::Tick()
 {
   (void)Pimpl->TickCuesReceived.fetch_add(1, std::memory_order_release);
+  carla::log_info("tick incremented");
 }
 
 bool FCarlaServer::TickCueReceived()

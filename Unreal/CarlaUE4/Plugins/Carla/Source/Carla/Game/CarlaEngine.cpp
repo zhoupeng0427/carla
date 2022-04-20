@@ -158,7 +158,7 @@ void FCarlaEngine::NotifyInitGame(const UCarlaSettings &Settings)
     }
     else
     {
-      // we are primary server, starting server
+      // we are primary server, starting server for secondary servers
       bIsPrimaryServer = true;
       SecondaryServer = Server.GetSecondaryServer();
     }
@@ -237,6 +237,11 @@ void FCarlaEngine::OnPreTick(UWorld *, ELevelTick TickType, float DeltaSeconds)
     // update frame counter
     UpdateFrameCounter();
 
+    if (bIsPrimaryServer)
+      carla::log_info("starting frame ", GetFrameCounter());
+    else
+      carla::log_info("starting frame ", GetFrameCounter(), " in queue ", FramesToProcess.size(), " frames");
+    
     if (CurrentEpisode != nullptr)
     {
       CurrentEpisode->TickTimers(DeltaSeconds);
@@ -246,6 +251,7 @@ void FCarlaEngine::OnPreTick(UWorld *, ELevelTick TickType, float DeltaSeconds)
       if (FramesToProcess.size())
       {
         TRACE_CPUPROFILER_EVENT_SCOPE_STR("FramesToProcess.PlayFrameData");
+        carla::log_info("processing frame");
         std::lock_guard<std::mutex> Lock(FrameToProcessMutex);
         FramesToProcess.front().PlayFrameData(GetCurrentEpisode(), MappedId);
         FramesToProcess.erase(FramesToProcess.begin()); // remove first element

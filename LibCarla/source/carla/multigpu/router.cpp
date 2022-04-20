@@ -50,11 +50,11 @@ void Router::SetCallbacks() {
     std::lock_guard<std::mutex> lock(self->_mutex);
     auto prom =self-> _promises.find(session.get());
     if (prom != self->_promises.end()) {
-      log_info("Got data from secondary (with promise): ", buffer.size());
+      // log_info("Got data from secondary (with promise): ", buffer.size());
       prom->second->set_value({session, std::move(buffer)});
       self->_promises.erase(prom);
     } else {
-      log_info("Got data from secondary (without promise): ", buffer.size());
+      // log_info("Got data from secondary (without promise): ", buffer.size());
     }
   };
 
@@ -135,7 +135,7 @@ std::future<SessionInfo> Router::WriteToNext(MultiGPUCommand id, Buffer &&buffer
     auto s = _sessions[_next];
     if (s != nullptr) {
       _promises[s.get()] = response;
-      std::cout << "Updated promise into map: " << _promises.size() << std::endl;
+      // std::cout << "Updated promise into map: " << _promises.size() << std::endl;
       s->Write(message);
     }
   }

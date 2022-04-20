@@ -17,11 +17,13 @@
 
 #ifndef LIBCARLA_LOG_LEVEL
 #  ifdef NDEBUG
-#    define LIBCARLA_LOG_LEVEL LIBCARLA_LOG_LEVEL_WARNING
+#    define LIBCARLA_LOG_LEVEL LIBCARLA_LOG_LEVEL_INFO
 #  else
 #    define LIBCARLA_LOG_LEVEL LIBCARLA_LOG_LEVEL_INFO
 #  endif // NDEBUG
 #endif // LIBCARLA_LOG_LEVEL
+
+// #define LIBCARLA_LOG_LEVEL LIBCARLA_LOG_LEVEL_DEBUG
 
 // The following log functions are available, they are only active if
 // LIBCARLA_LOG_LEVEL is greater equal the function's log level.
@@ -41,6 +43,9 @@
 // =============================================================================
 
 #include <iostream>
+#include <fstream>
+#include <mutex>
+#include <ctime>
 
 namespace carla {
 
@@ -49,10 +54,17 @@ namespace logging {
   // https://stackoverflow.com/a/27375675
   template <typename Arg, typename ... Args>
   LIBCARLA_NOINLINE
-  static void write_to_stream(std::ostream &out, Arg &&arg, Args && ... args) {
+  static void write_to_stream(std::ostream &_out, Arg &&arg, Args && ... args) {
+    static std::mutex mymutex;
+    std::lock_guard<std::mutex> lock(mymutex);
+
+    std::ofstream out("e:\\download\\carla.log", std::ios::app);
+    auto millisec_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    out << "[" << millisec_since_epoch << "] ";
     out << std::boolalpha << std::forward<Arg>(arg);
     using expander = int[];
     (void) expander{0, (void(out << ' ' << std::forward<Args>(args)), 0) ...};
+    out.close();
   }
 
   template <typename ... Args>

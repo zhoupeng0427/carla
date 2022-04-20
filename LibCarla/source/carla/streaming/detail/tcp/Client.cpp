@@ -16,6 +16,7 @@
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/post.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/bind_executor.hpp>
 
 #include <exception>
@@ -182,7 +183,8 @@ namespace tcp {
           // Move the buffer to the callback function and start reading the next
           // piece of data.
           // log_debug("streaming client: success reading data, calling the callback");
-          boost::asio::post(_strand, [self, message]() { self->_callback(message->pop()); });
+          log_info("sensor ", self->GetStreamId(), " data received");
+          boost::asio::dispatch(_strand, [self, message]() { self->_callback(message->pop()); });
           ReadData();
         } else {
           // As usual, if anything fails start over from the very top.

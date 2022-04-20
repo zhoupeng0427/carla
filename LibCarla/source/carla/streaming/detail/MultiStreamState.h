@@ -38,6 +38,7 @@ namespace detail {
       auto session = _session.load();
       if (session != nullptr) {
         auto message = Session::MakeMessage(std::move(buffers)...);
+        log_info("sensor ", session->get_stream_id()," data sent ", message->size(), " by");
         session->Write(std::move(message));
         // Return here, _session is only valid if we have a 
         // single session.
@@ -49,6 +50,7 @@ namespace detail {
       auto message = Session::MakeMessage(std::move(buffers)...);
       for (auto &s : _sessions) {
         if (s != nullptr) {
+          log_info("sensor ", s->get_stream_id()," data sent ", message->size(), " by");
           s->Write(message);
         }
       }
