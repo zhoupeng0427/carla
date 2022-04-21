@@ -35,10 +35,6 @@ void ASceneCaptureCamera::BeginPlay()
   UNetMediaCapture *MediaCapture = MediaOutput->GetMediaCapture();
   if (MediaCapture)
   {
-    FMediaCaptureOptions CaptureOptions;
-    CaptureOptions.bSkipFrameWhenRunningExpensiveTasks = false;
-    MediaCapture->CaptureTextureRenderTarget2D(GetCaptureRenderTarget(), CaptureOptions);
-    
     // callback
     MediaCapture->SetCallback([Sensor=this](std::vector<uint8_t> InBuffer, int32 Width, int32 Height, EPixelFormat PixelFormat)
 	  {
@@ -61,6 +57,30 @@ void ASceneCaptureCamera::BeginPlay()
   }
 }
 
+void ASceneCaptureCamera::OnFirstClientConnected()
+{
+  if (MediaOutput)
+  {
+    UNetMediaCapture *MediaCapture = MediaOutput->GetMediaCapture();
+    FMediaCaptureOptions CaptureOptions;
+    CaptureOptions.bSkipFrameWhenRunningExpensiveTasks = false;
+    MediaCapture->CaptureTextureRenderTarget2D(GetCaptureRenderTarget(), CaptureOptions);
+  }
+}
+
+void ASceneCaptureCamera::OnLastClientDisconnected()
+{
+  // stop capturing
+  if(MediaOutput)
+  {
+    UNetMediaCapture *MediaCapture = MediaOutput->GetMediaCapture();
+    if (MediaCapture)
+    {
+      MediaCapture->StopCapture(false);
+    }
+  }
+}
+
 void ASceneCaptureCamera::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
   // stop capturing
@@ -69,6 +89,7 @@ void ASceneCaptureCamera::EndPlay(const EEndPlayReason::Type EndPlayReason)
   {
     MediaCapture->StopCapture(false);
   }
+  Super::EndPlay(EndPlayReason);
 }
 
 void ASceneCaptureCamera::PostPhysTick(UWorld *World, ELevelTick TickType, float DeltaSeconds)

@@ -52,6 +52,8 @@ namespace detail {
       // try write single stream
       auto session = _session.load();
       if (session != nullptr) {
+        auto message = Session::MakeMessage(std::move(buffers)...);
+        log_info("sensor ", session->get_stream_id()," data sent ", message->size(), " by");
         session->Write(std::move(message));
         // Return here, _session is only valid if we have a 
         // single session.
@@ -60,15 +62,19 @@ namespace detail {
 
       // try write multiple stream
       std::lock_guard<std::mutex> lock(_mutex);
+      auto message = Session::MakeMessage(std::move(buffers)...);
       for (auto &s : _sessions) {
         if (s != nullptr) {
+          log_info("sensor ", s->get_stream_id()," data sent ", message->size(), " by");
           s->Write(message);
         }
       }
     }
   }
 
-  private:
+    bool AreClientsListening() {
+      return (_sessions.size() > 0);
+    }
 
     void ConnectSession(std::shared_ptr<Session> session) final {
       DEBUG_ASSERT(session != nullptr);
@@ -106,6 +112,7 @@ namespace detail {
         _sessions.clear();
         // destroy shared memory
         _shared_memory.reset();
+        log_warning("Last session disconnected");
       } else {
         _sessions.erase(
             std::remove(_sessions.begin(), _sessions.end(), session),
@@ -128,6 +135,8 @@ namespace detail {
       _shared_memory.reset();
       log_debug("Disconnecting all multistream sessions");
     }
+
+  private:
 
     std::mutex _mutex;
 
