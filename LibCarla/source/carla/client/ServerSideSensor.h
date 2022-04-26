@@ -27,6 +27,15 @@ namespace client {
     /// the same sensor in the simulator.
     void Listen(CallbackFunctionType callback) override;
 
+    /// Register a @a callback to be executed each time a new measurement is
+    /// received.
+    ///
+    /// @warning Calling this function on a sensor that is already listening
+    /// steals the data stream from the previously set callback. Note that
+    /// if called multiple times it will listen to a new stream instead of 
+    /// using a multistream line a normal sensor (this is a pseudo internal sensor)
+    void ListenGBuffers(CallbackFunctionType callback) override;
+
     /// Stop listening for new measurements.
     void Stop() override;
 

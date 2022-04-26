@@ -14,6 +14,10 @@ static void SubscribeToStream(carla::client::Sensor &self, boost::python::object
   self.Listen(MakeCallback(std::move(callback)));
 }
 
+static void SubscribeToStreamForGBuffers(carla::client::Sensor &self, boost::python::object callback) {
+  self.ListenGBuffers(MakeCallback(std::move(callback)));
+}
+
 void export_sensor() {
   using namespace boost::python;
   namespace cc = carla::client;
@@ -21,6 +25,7 @@ void export_sensor() {
   class_<cc::Sensor, bases<cc::Actor>, boost::noncopyable, boost::shared_ptr<cc::Sensor>>("Sensor", no_init)
     .add_property("is_listening", &cc::Sensor::IsListening)
     .def("listen", &SubscribeToStream, (arg("callback")))
+    .def("listen_gbuffers", &SubscribeToStreamForGBuffers, (arg("callback")))
     .def("stop", &cc::Sensor::Stop)
     .def(self_ns::str(self_ns::self))
   ;
