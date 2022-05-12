@@ -2,7 +2,8 @@
 
   * Added API function `get_telemetry_data` to the vehicle actor.
   * Check for the version of the installed Clang compiler during build.
-
+  * Added new tag for parking areas (Parking)
+  
 ## CARLA 0.9.13
 
   * Added new **instance aware semantic segmentation** sensor `sensor.camera.instance_segmentation`
