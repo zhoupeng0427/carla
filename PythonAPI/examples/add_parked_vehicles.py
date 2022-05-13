@@ -115,6 +115,12 @@ def main():
         for i, transform in enumerate(park_points):
             transform.location.z += args.height
 
+        # prepare the control to brake all parked vehicles
+        control = carla.VehicleControl()
+        control.throttle = 0.0
+        control.hand_brake = True
+        control.brake = 1.0
+
         # spawn all vehicles from selected blueprints
         batch = []
         total = 0
@@ -122,8 +128,8 @@ def main():
             if (random.random() <= args.per):
                 total += 1
                 batch.append(carla.command.SpawnActor(random.choice(vehicles_bp), transform)
-                .then(carla.command.SetEnableGravity(carla.command.FutureActor, True)))
-                # .then(carla.command.SetSimulatePhysics(carla.command.FutureActor, False)))
+                .then(carla.command.SetEnableGravity(carla.command.FutureActor, True))
+                .then(carla.command.ApplyVehicleControl(carla.command.FutureActor, control)))
         client.apply_batch(batch)
         print("Adding %d parked vehicles" % total)
         
