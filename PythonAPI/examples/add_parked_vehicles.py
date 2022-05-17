@@ -103,10 +103,14 @@ def main():
         world = client.get_world()
         vehicles_bp = get_actor_blueprints(world, args.filter, args.generation)
 
-        # safe vehicles (remove the AudiRC and 2 wheel vehicles)
+        # remove big vehicles
+        vehicles_bp = [x for x in vehicles_bp if not x.id.endswith('audirc')]
+        vehicles_bp = [x for x in vehicles_bp if not x.id.endswith('firetruck')]
+        vehicles_bp = [x for x in vehicles_bp if not x.id.endswith('ambulance')]
+
+        # safe vehicles (remove 2 wheel vehicles)
         if args.safe:
             vehicles_bp = [x for x in vehicles_bp if int(x.get_attribute('number_of_wheels')) == 4]
-            vehicles_bp = [x for x in vehicles_bp if not x.id.endswith('audirc')]
 
         # parked spawn points
         park_points = world.get_map().get_parked_spawn_points()
