@@ -274,9 +274,9 @@ boost::python::object VehiclePhysicsControl_init(boost::python::tuple args, boos
 }
 
 static auto GetWheelsTelemetry(const carla::rpc::VehicleTelemetryData &self) {
-  const auto &wheels = self.GetWheels();
+  const std::vector<carla::rpc::WheelTelemetryData> &wheels_data = self.wheels;
   boost::python::object get_iter = boost::python::iterator<std::vector<carla::rpc::WheelTelemetryData>>();
-  boost::python::object iter = get_iter(wheels);
+  boost::python::object iter = get_iter(wheels_data);
   return boost::python::list(iter);
 }
 
@@ -526,6 +526,11 @@ void export_control() {
     .def_readwrite("use_sweep_wheel_collision", &cr::VehiclePhysicsControl::use_sweep_wheel_collision)
     .def("__eq__", &cr::VehiclePhysicsControl::operator==)
     .def("__ne__", &cr::VehiclePhysicsControl::operator!=)
+    .def(self_ns::str(self_ns::self))
+  ;
+
+  class_<std::vector<cr::WheelTelemetryData>>("vector_of_telemetry_wheels")
+    .def(boost::python::vector_indexing_suite<std::vector<cr::WheelTelemetryData>>())
     .def(self_ns::str(self_ns::self))
   ;
 
