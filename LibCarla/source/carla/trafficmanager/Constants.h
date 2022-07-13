@@ -110,6 +110,7 @@ static float const STRAIGHT_DEG = 19.0f;
 namespace TrafficLight {
 static const double MINIMUM_STOP_TIME = 2.0;
 static const double EXIT_JUNCTION_THRESHOLD = 0;  // Dot product of 90º
+static const double ENTERING_ANGLE_THRESHOLD = 0.707;  // Dot product of 45º
 } // namespace TrafficLight
 
 namespace MotionPlan {

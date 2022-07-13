@@ -118,6 +118,7 @@ bool TrafficLightStage::HandleNonSignalisedJunction(const ActorId ego_actor_id, 
   auto junction_id = junction->GetId();
 
   auto& entering_vehicles = entering_vehicles_map.at(junction_id);
+  auto& exiting_vehicles = exiting_vehicles_map.at(junction_id);
 
   if (vehicle_stop_time.find(ego_actor_id) == vehicle_stop_time.end()) {
     // Ensure the vehicle stops before doing anything else
@@ -134,6 +135,14 @@ bool TrafficLightStage::HandleNonSignalisedJunction(const ActorId ego_actor_id, 
       traffic_light_hazard = true;
     }
     else {
+      auto ego_heading = simulation_state.GetHeading(ego_actor_id);
+      for (auto &exiting_vehicle_id : exiting_vehicles) {
+        auto exiting_heading = simulation_sate.GetHeading(exiting_vehicle_id);
+        if (cg::Math::Dot(ego_heading, exiting_heading) > ENTERING_ANGLE_THRESHOLD) {
+          traffic_light_hazard = true;
+        }
+      }
+
       // Track the first actor until it has passed the mid-point
       cg::Transform actor_transform = waypoint_buffer.front()->GetTransform();
       cg::Vector3D forward_vec = actor_transform.GetForwardVector();
