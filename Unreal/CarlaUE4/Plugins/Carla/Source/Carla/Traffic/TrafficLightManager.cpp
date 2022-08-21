@@ -10,6 +10,7 @@
 #include "YieldSignComponent.h"
 #include "SpeedLimitComponent.h"
 #include "Components/BoxComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 #include "UObject/ConstructorHelpers.h"
 

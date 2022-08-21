@@ -48,30 +48,156 @@ UPrepareAssetsForCookingCommandlet::UPrepareAssetsForCookingCommandlet()
   LogToConsole = true;
 
 #if WITH_EDITORONLY_DATA
-  // Get Carla Default materials, these will be used for maps that need to use
-  // Carla materials
-  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingNodeYellowMaterial(TEXT(
-    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LargeMaps/M_Road_03_Tiled_V3.M_Road_03_Tiled_V3'"));
-  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingNodeWhiteMaterial(TEXT(
-    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/M_Road_03_LMW.M_Road_03_LMW'"));
+  // Get Carla Default materials, which will be used at maps that require Carla materials.
+
+  // Road materials.
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> RoadRuralNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/MI_Road_Rural.MI_Road_Rural'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> RoadBoulevardNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/MI_Road_Asphalt.MI_Road_Asphalt'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> RoadAvenueNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/MI_Road_Asphalt.MI_Road_Asphalt'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> RoadCityNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/MI_Road_Asphalt.MI_Road_Asphalt'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> RoadElectricPoleNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/MI_Road_Asphalt.MI_Road_Asphalt'"));
+  RoadRuralMaterial = (UMaterialInstance *) RoadRuralNode.Object;
+  RoadBoulevardMaterial = (UMaterialInstance *) RoadBoulevardNode.Object;
+  RoadAvenueMaterial = (UMaterialInstance *) RoadAvenueNode.Object;
+  RoadCityMaterial = (UMaterialInstance *) RoadCityNode.Object;
+  RoadElectricPoleMaterial = (UMaterialInstance *) RoadElectricPoleNode.Object;
+
+  // Previous road CARLA material
   static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> RoadNode(TEXT(
       "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LargeMaps/M_Road_03_Tiled_V2.M_Road_03_Tiled_V2'"));
-  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainNodeMaterial(TEXT(
-      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/00_MastersOpt/Large_Maps/materials/MI_LargeLandscape_Grass.MI_LargeLandscape_Grass'"));
-  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> CurbNodeMaterial(TEXT(
+  RoadMaterial = (UMaterialInstance *) RoadNode.Object;
+
+  // Lane Markings.
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingYellowAsphaltNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LaneMarkings/MI_LaneMarkingYellow_Asphalt.MI_LaneMarkingYellow_Asphalt'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingYellowResidentialNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LaneMarkings/MI_LaneMarkingYellow_Residential.MI_LaneMarkingYellow_Residential'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingYellowRuralNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LaneMarkings/MI_LaneMarkingYellow_Rural.MI_LaneMarkingYellow_Rural'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingAsphaltNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LaneMarkings/MI_LaneMarking_Asphalt.MI_LaneMarking_Asphalt'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingResidentialNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LaneMarkings/MI_LaneMarking_Residential.MI_LaneMarking_Residential'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingRuralNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LaneMarkings/MI_LaneMarking_Rural.MI_LaneMarking_Rural'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingParkingNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LaneMarkings/MI_LaneMarking_Asphalt.MI_LaneMarking_Asphalt'"));
+  MarkingYellowAsphaltMaterial = (UMaterialInstance *) MarkingYellowAsphaltNode.Object;
+  MarkingYellowResidentialMaterial = (UMaterialInstance *) MarkingYellowResidentialNode.Object;
+  MarkingYellowRuralMaterial = (UMaterialInstance *) MarkingYellowRuralNode.Object;
+  MarkingAsphaltMaterial = (UMaterialInstance *) MarkingAsphaltNode.Object;
+  MarkingResidentialMaterial = (UMaterialInstance *) MarkingResidentialNode.Object;
+  MarkingRuralMaterial = (UMaterialInstance *) MarkingRuralNode.Object;
+  MarkingParkingMaterial = (UMaterialInstance *) MarkingParkingNode.Object;
+
+  // Previous lane marking CARLA material
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingYellowNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/LargeMaps/M_Road_03_Tiled_V3.M_Road_03_Tiled_V3'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> MarkingNode(TEXT(
+    "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/RoadPainterMaterials/M_Road_03_LMW.M_Road_03_LMW'"));
+  MarkingYellowMaterial = (UMaterialInstance *) MarkingYellowNode.Object;
+  MarkingMaterial = (UMaterialInstance *) MarkingNode.Object;
+
+  // Curb and Gutter materials
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> CurbNode(TEXT(
       "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/LargeMap_materials/largeM_curb/MI_largeM_curb01.MI_largeM_curb01'"));
-  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> GutterNodeMaterial(TEXT(
+  CurbMaterial = (UMaterialInstance *) CurbNode.Object;
+
+  // Gutter
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> GutterNode(TEXT(
       "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/LargeMap_materials/largeM_gutter/MI_largeM_gutter01.MI_largeM_gutter01'"));
+  GutterMaterial = (UMaterialInstance *) GutterNode.Object;
+
+  // Sidewalk
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> SidewalkResidentialNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Residential.MI_Sidewalk_Residential'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> SidewalkResidentialGrassNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Residential_Grass.MI_Sidewalk_Residential_Grass'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> SidewalkSkyscrapersNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Skyscrapper.MI_Sidewalk_Skyscrapper'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> SidewalkApartmentNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Apartment.MI_Sidewalk_Apartment'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> SidewalkCommunityNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Community.MI_Sidewalk_Community'"));
+  SidewalkResidentialMaterial = (UMaterialInstance *) SidewalkResidentialNode.Object;
+  SidewalkResidentialGrassMaterial = (UMaterialInstance *) SidewalkResidentialGrassNode.Object;
+  SidewalkSkyscrapersMaterial = (UMaterialInstance *) SidewalkSkyscrapersNode.Object;
+  SidewalkApartmentMaterial = (UMaterialInstance *) SidewalkApartmentNode.Object;
+  SidewalkCommunityMaterial = (UMaterialInstance *) SidewalkCommunityNode.Object;
+
+  // Previous sidewalk CARLA material
   static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> SidewalkNode(TEXT(
       "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/LargeMap_materials/largeM_sidewalk/tile01/MI_largeM_tile02.MI_largeM_tile02'"));
+  SidewalkMaterial = (UMaterialInstance *) SidewalkNode.Object;
 
-  GutterNodeMaterialInstance = (UMaterialInstance *) GutterNodeMaterial.Object;
-  CurbNodeMaterialInstance = (UMaterialInstance *) CurbNodeMaterial.Object;
-  TerrainNodeMaterialInstance = (UMaterialInstance *) TerrainNodeMaterial.Object;
-  MarkingNodeYellow = (UMaterialInstance *)MarkingNodeYellowMaterial.Object;
-  MarkingNodeWhite = (UMaterialInstance *)MarkingNodeWhiteMaterial.Object;
-  RoadNodeMaterial = (UMaterialInstance *) RoadNode.Object;
-  SidewalkNodeMaterialInstance = (UMaterialInstance *) SidewalkNode.Object;
+  // Terrain
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainHighwayNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Ground/MI_LargeLandscape_Highway.MI_LargeLandscape_Highway'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainInterurbanNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Ground/MI_LargeLandscape_Interurban.MI_LargeLandscape_Interurban'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainMountainNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Ground/MI_LargeLandscape_Mountain.MI_LargeLandscape_Mountain'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainRuralNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Ground/MI_LargeLandscape_Rural.MI_LargeLandscape_Rural'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainGrassNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Ground/MI_LargeLandscape_Grass.MI_LargeLandscape_Grass'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainResidentialNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Ground/MI_Grass_Cutted.MI_Grass_Cutted'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainParkNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Ground/MI_Grass_Park.MI_Grass_Park'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainWaterLakeNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Water/MI_Water_Lake.MI_Water_Lake'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainSkyscrapersNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Skyscrapper.MI_Sidewalk_Skyscrapper'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainApartmentNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Apartment.MI_Sidewalk_Apartment'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainCommunityNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Sidewalk/MI_Sidewalk_Community.MI_Sidewalk_Community'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> BridgeWallNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Wall/MI_WallBridge.MI_WallBridge'"));
+  TerrainHighwayMaterial = (UMaterialInstance *) TerrainHighwayNode.Object;
+  TerrainInterurbanMaterial = (UMaterialInstance *) TerrainInterurbanNode.Object;
+  TerrainMountainMaterial = (UMaterialInstance *) TerrainMountainNode.Object;
+  TerrainRuralMaterial = (UMaterialInstance *) TerrainRuralNode.Object;
+  TerrainGrassMaterial = (UMaterialInstance *) TerrainGrassNode.Object;
+  TerrainWaterLakeMaterial = (UMaterialInstance *) TerrainWaterLakeNode.Object;
+  TerrainParkMaterial = (UMaterialInstance *) TerrainParkNode.Object;
+  TerrainSkyscrapersMaterial = (UMaterialInstance *) TerrainSkyscrapersNode.Object;
+  TerrainApartmentMaterial = (UMaterialInstance *) TerrainApartmentNode.Object;
+  TerrainCommunityMaterial = (UMaterialInstance *) TerrainCommunityNode.Object;
+  TerrainResidentialMaterial = (UMaterialInstance *) TerrainResidentialNode.Object;
+  BridgeWallMaterial = (UMaterialInstance *) BridgeWallNode.Object;
+
+  // Previous terrain CARLA material
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> TerrainNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/00_MastersOpt/Large_Maps/materials/MI_LargeLandscape_Grass.MI_LargeLandscape_Grass'"));
+  TerrainMaterial = (UMaterialInstance *) TerrainNode.Object;
+
+  // Guardrail
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> GuardrailPostNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GuardRail/Materials/GuardRail/MI_GuardRailPost.MI_GuardRailPost'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> GuardrailMetalNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GuardRail/Materials/GuardRail/MI_GuardRail.MI_GuardRail'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> BridgeGuardrailPostNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GuardRail/Materials/GuardRail/MI_GuardRail.MI_GuardRail'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> BridgeGuardrailMetalNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GuardRail/Materials/GuardRail/MI_GuardRail.MI_GuardRail'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> BridgeGuardrailBaseNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Concrete/MI_BaseBridgeRailling.MI_BaseBridgeRailling'"));
+  static ConstructorHelpers::FObjectFinder<UMaterialInstanceConstant> SafetyWallHighwayNode(TEXT(
+      "MaterialInstanceConstant'/Game/Carla/Static/GenericMaterials/Wall/MI_SafetyWallHighWay.MI_SafetyWallHighWay'"));
+  GuardrailPostMaterial = (UMaterialInstance *) GuardrailPostNode.Object;
+  GuardrailMetalMaterial = (UMaterialInstance *) GuardrailMetalNode.Object;
+  BridgeGuardrailPostMaterial = (UMaterialInstance *) BridgeGuardrailPostNode.Object;
+  BridgeGuardrailMetalMaterial = (UMaterialInstance *) BridgeGuardrailMetalNode.Object;
+  BridgeGuardrailBaseMaterial = (UMaterialInstance *) BridgeGuardrailBaseNode.Object;
+  SafetyWallHighwayMaterial = (UMaterialInstance *) SafetyWallHighwayNode.Object;
+
 #endif
 }
 #if WITH_EDITORONLY_DATA
@@ -212,44 +338,286 @@ TArray<AStaticMeshActor *> UPrepareAssetsForCookingCommandlet::SpawnMeshesToWorl
 
         if (bUseCarlaMaterials)
         {
-          // Set Carla Materials depending on RoadRunner's Semantic Segmentation
-          // tag
-          if (AssetName.Contains(SSTags::R_MARKING1) || AssetName.Contains(SSTags::R_MARKING2))
+          std::cout << "> Importing asset: " << TCHAR_TO_UTF8(*AssetName) << std::endl;
+          // Set Carla Materials depending on RoadRunner's Semantic Segmentation tag and material name
+          if (AssetName.Contains(SSTags::R_ROAD1) || AssetName.Contains(SSTags::R_ROAD2))
           {
+            std::cout << ">> Asset is a Road" << std::endl;
             for (int32 i = 0; i < MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials.Num(); ++i)
             {
-              if (MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString().Contains("Yellow"))
-              {
-                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingNodeYellow);
+              auto MaterialName = MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString();
+              std::cout << ">>> Material name: " << TCHAR_TO_UTF8(*MaterialName);
+              if (MaterialName.Contains("RuralRoad_Road"))
+              { // Worn out road with less asphalt and more gravel
+                std::cout << " -> Rural Road" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, RoadRuralMaterial);
+              }
+              else if (MaterialName.Contains("Asphalt1_Road"))
+              { // City road made of asphalt
+                std::cout << " -> Asphalt Road" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, RoadCityMaterial);
+              }
+              else if (MaterialName.Contains("BoulevardStreet_Road"))
+              { // City road made of asphalt. Used by the procedural decoration
+                std::cout << " -> Boulevard Road" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, RoadBoulevardMaterial);
+              }
+              else if (MaterialName.Contains("AvenueStreet_Road"))
+              { // City road made of asphalt. Used by the procedural decoration
+                std::cout << " -> Avenue Road" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, RoadAvenueMaterial);
+              }
+              else if (MaterialName.Contains("ElectricPole_Road"))
+              { // City road made of asphalt. Used by the procedural decoration
+                std::cout << " -> Electric Pole Road" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, RoadElectricPoleMaterial);
               }
               else
-              {
-                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingNodeWhite);
+              { // City road made of asphalt. Used by the procedural decoration
+                std::cout << " -> Default Road???" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, RoadMaterial);
               }
             }
           }
-          else if (AssetName.Contains(SSTags::R_ROAD1) || AssetName.Contains(SSTags::R_ROAD2))
+          else if (AssetName.Contains(SSTags::R_MARKING1) || AssetName.Contains(SSTags::R_MARKING2))
           {
-            MeshActor->GetStaticMeshComponent()->SetMaterial(0, RoadNodeMaterial);
+            std::cout << ">> Asset is a Lane Marking" << std::endl;
+            for (int32 i = 0; i < MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials.Num(); ++i)
+            {
+              auto MaterialName = MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString();
+              std::cout << ">>> Material name: " << TCHAR_TO_UTF8(*MaterialName);
+              if (MaterialName.Contains("LaneMarking1_Marking"))
+              { // White marking part of asphalt roads, clearly visible
+                std::cout << " -> Asphalt Lane Marking" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingAsphaltMaterial);
+              }
+              else if (MaterialName.Contains("LaneMarking2_Marking"))
+              { // White marking part at the residential roads, partially worn out
+                std::cout << " -> Residential Lane Marking" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingResidentialMaterial);
+              }
+              else if (MaterialName.Contains("LaneMarking3_Marking"))
+              { // White marking part at the rural roads, heavily worn out
+                std::cout << " -> Rural Lane Marking" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingRuralMaterial);
+              }
+              else if (MaterialName.Contains("LaneMarkingYellow1_Marking"))
+              { // Yellow marking part of asphalt roads, clearly visible
+                std::cout << " -> Asphalt Yellow Lane Marking" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingYellowAsphaltMaterial);
+              }
+              else if (MaterialName.Contains("LaneMarkingYellow2_Marking"))
+              { // Yellow marking part at the residential roads, partially worn out
+                std::cout << " -> Residential Yellow Lane Marking" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingYellowResidentialMaterial);
+              }
+              else if (MaterialName.Contains("LaneMarkingYellow3_Marking"))
+              { // Yellow marking part at the rural roads, heavily worn out
+                std::cout << " -> Rural Yellow Lane Marking" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingYellowRuralMaterial);
+              }
+              else if (MaterialName.Contains("LaneMarkingParking_Marking"))
+              { // Yellow marking part at the rural roads, heavily worn out
+                std::cout << " -> Parking Lane Marking" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingParkingMaterial);
+              }
+              else if (MaterialName.Contains("Yellow"))
+              {
+                std::cout << " -> Default Yellow Lane Marking???" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingYellowMaterial);
+              }
+              else
+              {
+                std::cout << " -> Default White Lane Marking???" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, MarkingMaterial);
+              }
+            }
           }
-          else if (AssetName.Contains(SSTags::R_TERRAIN))
+          else if (AssetName.Contains(SSTags::R_CURB1) || AssetName.Contains(SSTags::R_CURB2))
           {
-            MeshActor->GetStaticMeshComponent()->SetMaterial(0, TerrainNodeMaterialInstance);
+            std::cout << ">> Asset is a Curb" << std::endl;
+            for (int32 i = 0; i < MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials.Num(); ++i)
+            {
+              auto MaterialName = MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString();
+              std::cout << ">>> Material name: " << TCHAR_TO_UTF8(*MaterialName) << " -> Universal Curb" << std::endl;
+              MeshActor->GetStaticMeshComponent()->SetMaterial(i, CurbMaterial);
+            }
+            MeshActor->GetStaticMeshComponent()->bReceivesDecals = false;
+          }
+          else if (AssetName.Contains(SSTags::R_GUTTER1) || AssetName.Contains(SSTags::R_GUTTER2))
+          {
+            std::cout << ">> Asset is a Gutter" << std::endl;
+            for (int32 i = 0; i < MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials.Num(); ++i)
+            {
+              auto MaterialName = MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString();
+              std::cout << ">>> Material name: " << TCHAR_TO_UTF8(*MaterialName) << " -> Universal Gutter" << std::endl;
+              MeshActor->GetStaticMeshComponent()->SetMaterial(i, GutterMaterial);
+            }
             MeshActor->GetStaticMeshComponent()->bReceivesDecals = false;
           }
           else if (AssetName.Contains(SSTags::R_SIDEWALK1) || AssetName.Contains(SSTags::R_SIDEWALK2))
           {
-            MeshActor->GetStaticMeshComponent()->SetMaterial(0, SidewalkNodeMaterialInstance);
+            std::cout << ">> Asset is a Sidewalk" << std::endl;
+            for (int32 i = 0; i < MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials.Num(); ++i)
+            {
+              auto MaterialName = MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString();
+              std::cout << ">>> Material name: " << TCHAR_TO_UTF8(*MaterialName);
+              if (MaterialName.Contains("Sidewalk_Residential_Sidewalk"))
+              { // Sidewalk with big squares of cement
+                std::cout << " -> Residential Sidewalk" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SidewalkResidentialMaterial);
+              }
+              else if (MaterialName.Contains("Residential_Sidewalk"))
+              {
+                std::cout << " -> Residential Sidewalk" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SidewalkResidentialMaterial);
+              }
+              else if (MaterialName.Contains("Residential_path_Sidewalk"))
+              {
+                std::cout << " -> Residential Path Sidewalk" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SidewalkResidentialGrassMaterial);
+              }
+              else if (MaterialName.Contains("Sidewalk_Skyscraper_rrx_Sidewalk"))
+              { // Sidewalk with more decorations
+                std::cout << " -> Skyscraper Sidewalk" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SidewalkSkyscrapersMaterial);
+              }
+              else if (MaterialName.Contains("Sidewalk_Apartment_Sidewalk"))
+              {
+                std::cout << " -> Apartment Sidewalk" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SidewalkApartmentMaterial);
+              }
+              else if (MaterialName.Contains("Sidewalk_Comunity_Sidewalk"))
+              { // Worn out sidewalk
+                std::cout << " -> Community Sidewalk" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SidewalkCommunityMaterial);
+              }
+              else
+              {
+                std::cout << " -> Default Sidewalk???" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SidewalkMaterial);
+              }
+            }
             MeshActor->GetStaticMeshComponent()->bReceivesDecals = false;
           }
-          else if (AssetName.Contains(SSTags::R_CURB1) || AssetName.Contains(SSTags::R_CURB2)) {
-
-            MeshActor->GetStaticMeshComponent()->SetMaterial(0, CurbNodeMaterialInstance);
+          else if (AssetName.Contains(SSTags::R_TERRAIN))
+          {
+            std::cout << ">> Asset is a Terrain" << std::endl;
+            for (int32 i = 0; i < MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials.Num(); ++i)
+            {
+              auto MaterialName = MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString();
+              std::cout << ">>> Material name: " << TCHAR_TO_UTF8(*MaterialName);
+              if (MaterialName.Contains("HighwayZone_Ground"))
+              {  // Rocky ground with some grass
+                std::cout << " -> Highway Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainHighwayMaterial);
+              }
+              else if (MaterialName.Contains("Interurban_Ground"))
+              {  // Ground with a lot of grass and some ground
+                std::cout << " -> Interurban Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainInterurbanMaterial);
+              }
+              else if (MaterialName.Contains("Mountain_Ground"))
+              {  // A bit of rocky ground, a bit of grass, all mixed together
+                std::cout << " -> Mountain Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainMountainMaterial);
+              }
+              else if (MaterialName.Contains("Rural_Ground"))
+              {  // Ground with a more rural feel
+                std::cout << " -> Rural Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainRuralMaterial);
+              }
+              else if (MaterialName.Contains("Grass2_rrx_Ground"))
+              {  // Grass with other very small vegetation
+                std::cout << " -> Grass Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainGrassMaterial);
+              }
+              else if (MaterialName.Contains("Water1_rrx_Ground"))
+              {  // Water, part of a lake, moving on
+                std::cout << " -> Water Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainWaterLakeMaterial);
+              }
+              else if (MaterialName.Contains("Park_Ground"))
+              {  // Carefully gardened grass with some flora
+                std::cout << " -> Park Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainParkMaterial);
+              }
+              else if (MaterialName.Contains("Skyscraper_rrx_Ground"))
+              {  // Same as its sidewalk counterpart
+                std::cout << " -> Skyscraper Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainSkyscrapersMaterial);
+              }
+              else if (MaterialName.Contains("Apartment_Ground"))
+              {  // Same as its sidewalk counterpart
+                std::cout << " -> Apartment Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainApartmentMaterial);
+              }
+              else if (MaterialName.Contains("Comunity_Ground"))
+              {  // Same as its sidewalk counterpart
+                std::cout << " -> Coomunity Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainCommunityMaterial);
+              }
+              else if (MaterialName.Contains("Residential_Ground"))
+              {  // Same as its sidewalk counterpart
+                std::cout << " -> Residential Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainResidentialMaterial);
+              }
+              else if (MaterialName.Contains("Concrete2"))
+              {  // Same as its sidewalk counterpart
+                std::cout << " -> Bridge Wall Terrain" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, BridgeWallMaterial);
+              }
+              else
+              {
+                std::cout << " -> Default Terrain???" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, TerrainMaterial);
+              }
+            }
             MeshActor->GetStaticMeshComponent()->bReceivesDecals = false;
           }
-          else if (AssetName.Contains(SSTags::R_GUTTER1) || AssetName.Contains(SSTags::R_GUTTER2)) {
-
-            MeshActor->GetStaticMeshComponent()->SetMaterial(0, GutterNodeMaterialInstance);
+          else if (AssetName.Contains(SSTags::R_PROP))
+          {
+            // This might missidentify some props if the materials are the same as the guardrail ones
+            std::cout << ">> Asset is a Prop" << std::endl;
+            for (int32 i = 0; i < MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials.Num(); ++i)
+            {
+              auto MaterialName = MeshActor->GetStaticMeshComponent()->GetStaticMesh()->StaticMaterials[i].ImportedMaterialSlotName.ToString();
+              std::cout << ">>> Material name: " << TCHAR_TO_UTF8(*MaterialName);
+              if (MaterialName.Contains("M_GuardRail_Prop"))
+              {  // Rocky ground with some grass
+                std::cout << " -> Guardrail Post" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, GuardrailPostMaterial);
+              }
+              else if (MaterialName.Contains("Metal1_Marking"))
+              {  // Ground with a lot of grass and some ground
+                std::cout << " -> Guardrail Metal" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, GuardrailMetalMaterial);
+              }
+              else if (MaterialName.Contains("Metal_Road"))
+              {  // Ground with a lot of grass and some ground
+                std::cout << " -> Bridge Guardrail Post" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, BridgeGuardrailPostMaterial);
+              }
+              else if (MaterialName.Contains("Metal1_Prop"))
+              {  // Ground with a lot of grass and some ground
+                std::cout << " -> Bridge Guardrail Metal" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, BridgeGuardrailMetalMaterial);
+              }
+              else if (MaterialName.Contains("Concrete1_Prop") || MaterialName.Contains("Base_BridgeRalling_Prop"))
+              {  // Ground with a lot of grass and some ground
+                std::cout << " -> Bridge Guardrail Base" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, BridgeGuardrailBaseMaterial);
+              }
+              else if (MaterialName.Contains("Concrete1_Marking") || MaterialName.Contains("Concrete2_rrx_marking"))
+              {  // Ground with a lot of grass and some ground
+                std::cout << " -> Highway Wall" << std::endl;
+                MeshActor->GetStaticMeshComponent()->SetMaterial(i, SafetyWallHighwayMaterial);
+              }
+              else
+              {
+                std::cout << " -> Unidentified Prop???" << std::endl;
+              }
+            }
             MeshActor->GetStaticMeshComponent()->bReceivesDecals = false;
           }
         }

@@ -8,6 +8,8 @@
 #include "Carla/OpenDrive/OpenDriveActor.h"
 
 #include "Carla/OpenDrive/OpenDrive.h"
+#include "UObject/ConstructorHelpers.h"
+#include "DrawDebugHelpers.h"
 
 #include "UObject/ConstructorHelpers.h"
 #include "DrawDebugHelpers.h"
